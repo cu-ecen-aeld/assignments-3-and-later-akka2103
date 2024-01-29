@@ -27,7 +27,7 @@ int main( int argc, char *argv[])
 		}
 		else
 		{
-<<<<<<< HEAD
+
 			//write thr string in the file
 			int n_bytes = fprintf(file, "%s", argv[2]);
 
@@ -35,16 +35,6 @@ int main( int argc, char *argv[])
 			if(n_bytes<=0)
 			{
 				syslog(LOG_USER|LOG_ERR, "File write operation unsuccessful");
-=======
-			//write the string in the file
-			int n_bytes = fprintf(file, "%s", argv[2]);
-
-			//check if string written correctly
-			if(n_bytes <=0)
-			{
-				syslog( LOG_USER|LOG_ERR, "File writting unsuccessful");
->>>>>>> b64be84af1ddfcd8bdce53c2770369454020b341
-				return 1;
 			}
 
 			//close the file
