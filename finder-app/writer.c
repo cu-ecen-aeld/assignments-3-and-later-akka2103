@@ -11,6 +11,7 @@ int main( int argc, char *argv[])
 	if(argc!=2)
 	{
 		syslog(LOG_USER | LOG_ERR, "Arguments missing, first should be file path and second should be string to be written in the file");
+		return 1;
 	}
 	else
 	{
@@ -21,12 +22,19 @@ int main( int argc, char *argv[])
 		if(file==NULL)
 		{
 			syslog( LOG_USER | LOG_ERR, "File does not exists: %m");
-			exit(1);
+			return 1;
 		}
 		else
 		{
 			//write thr string in the file
-			fprintf(file, "%s", argv[2]);
+			int n_bytes = fprintf(file, "%s", argv[2]);
+
+			//check if string written successfully
+			if(n_bytes<=0)
+			{
+				syslog(LOG_USER|LOG_ERR, "File write operation unsuccessful");
+				return 1;
+			}
 
 			//close the file
 			fclose(file);
