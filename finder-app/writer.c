@@ -1,6 +1,8 @@
 /*
-
+    This program takes two command line arguments: a file path and a string. 
+    It opens the specified file, writes the provided string to it, and logs the operation using syslog.
 */
+
 #include <stdio.h>
 #include <syslog.h>
 #include <stdlib.h>
@@ -9,6 +11,7 @@
 //main 
 int main( int argc, char *argv[])
 {
+	// Check if the correct number of arguments is provided
 	if(argc!=3)
 	{
 		syslog(LOG_USER | LOG_ERR, "Arguments missing, first should be file path and second should be string to be written in the file");
@@ -28,7 +31,7 @@ int main( int argc, char *argv[])
 		else
 		{
 
-			//write thr string in the file
+			//write the string in the file
 			int n_bytes = fprintf(file, "%s", argv[2]);
 
 			//check if string written successfully
