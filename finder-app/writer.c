@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <string.h>
 
 //main 
 int main( int argc, char *argv[])
 {
-	if(argc!=2)
+	if(argc!=3)
 	{
 		syslog(LOG_USER | LOG_ERR, "Arguments missing, first should be file path and second should be string to be written in the file");
 		return 1;
@@ -26,6 +27,7 @@ int main( int argc, char *argv[])
 		}
 		else
 		{
+<<<<<<< HEAD
 			//write thr string in the file
 			int n_bytes = fprintf(file, "%s", argv[2]);
 
@@ -33,6 +35,15 @@ int main( int argc, char *argv[])
 			if(n_bytes<=0)
 			{
 				syslog(LOG_USER|LOG_ERR, "File write operation unsuccessful");
+=======
+			//write the string in the file
+			int n_bytes = fprintf(file, "%s", argv[2]);
+
+			//check if string written correctly
+			if(n_bytes <=0)
+			{
+				syslog( LOG_USER|LOG_ERR, "File writting unsuccessful");
+>>>>>>> b64be84af1ddfcd8bdce53c2770369454020b341
 				return 1;
 			}
 
