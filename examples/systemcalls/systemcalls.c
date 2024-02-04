@@ -72,7 +72,7 @@ bool do_exec(int count, ...)
 	if(pid == -1)
 	{
 		perror("Fork Failed");
-		return -1;
+		return false;
 	}
 	else if(pid ==0)
 	{
@@ -82,16 +82,24 @@ bool do_exec(int count, ...)
 		//execv returns if there is an error
 		perror("Execv Failed");
 
-		exit(-1);
+		exit(1);
+	}
+	//parent process
+	int status;
+	if(waitpid (pid, &status, 0) == -1)
+	{
+		return false;
+	}
+	else if(WIFEXITED (status))
+	{
+		if(WEXITSTATUS (status)!=0)
+		{
+			return false;
+		}
 	}
 	else
 	{
-		//parent process
-		int status;
-		if(waitpid (pid, &status, 0) == -1)
-			return -1;
-		else if(WIFEXITED (status))
-			return WEXITSTATUS (status);
+		return false;
 	}
 
     va_end(args);
@@ -132,7 +140,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 	if(pid == -1)
 	{
 		perror("Fork Failed");
-		return -1;
+		return false;
 	}
 	else if(pid == 0)
 	{
@@ -144,7 +152,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 		if(fd == -1)
 		{
 			perror("Open Failed");
-			return -1;
+			return false;
 		}
 
 		//Redirect std output to the file
@@ -152,7 +160,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 		{
 			perror("Duplication Failed(dup2)");
 			close(fd);
-			exit(-1);
+			exit(1);
 		}
 
 		//close dup file descriptor
@@ -165,15 +173,18 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 
                 exit(-1);
         }
-        else
+        
+	//parent process
+        int status;
+        if(waitpid (pid, &status, 0) == -1)
+        	return false;
+        else if(WIFEXITED (status))
         {
-		//parent process
-                int status;
-                if(waitpid (pid, &status, 0) == -1)
-                        return -1;
-                else if(WIFEXITED (status))
-                        return WEXITSTATUS (status);
+                if(WEXITSTATUS (status)!=0)
+                        return false;
         }
+	else
+		return false;
 
     va_end(args);
 
