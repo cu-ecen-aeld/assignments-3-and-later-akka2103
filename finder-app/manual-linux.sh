@@ -135,10 +135,11 @@ mkdir -p ${OUTDIR}/rootfs/home
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
 cd ${FINDER_APP_DIR}
-cp finder* writer* "${OUTDIR}/rootfs/home/"
+cp finder* writer "${OUTDIR}/rootfs/home/"
 
 cd ${FINDER_APP_DIR}/conf/
-cp username.txt assignment.txt "${OUTDIR}/rootfs/home/"
+mkdir -p ${OUTDIR}/rootfs/home/conf
+cp username.txt assignment.txt "${OUTDIR}/rootfs/home/conf"
 
 # Copy the autorun-qemu.sh script into the outdir/rootfs/home directory
 cd ${FINDER_APP_DIR}
