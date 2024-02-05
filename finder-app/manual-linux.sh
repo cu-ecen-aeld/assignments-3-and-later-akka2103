@@ -45,7 +45,7 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     make -j4 ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- all
 
     #Build any kernel modules
-    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules
+    #make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules
 
     #Build the devicetree
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs
@@ -85,6 +85,8 @@ fi
 make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 make CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} install
 
+cd "${OUTDIR}/rootfs"
+
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
@@ -92,8 +94,12 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 
 #copy required files from sysroot to the lib directory
-cp "${your_sysroot}${INTERP_PATH}" "${OUTDIR}/rootfs/lib64"
-cp "${your_sysroot}${SHAREDLIB_PATH}" "${OUTDIR}/rootfs/lib64"
+cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib
+cp ld-linux-aarch64.so.1 "${OUTDIR}/rootfs/lib64"
+cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64
+cp libm.so.6 libresolv.so.2 libc.so.6 "${OUTDIR}/rootfs/lib64"
+
+cd "${OUTDIR}/rootfs"
 
 # TODO: Make device nodes
 #create a dev null device
@@ -104,7 +110,7 @@ sudo mknod -m 666 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
 # Change to the directory where fibder/writer is located
-cd "/home/akka2103/assignment-2-akka2103/finder-app/"
+cd /home/akka2103/assignment-2-akka2103/finder-app/
 
 # Clean the project
 make clean
@@ -119,14 +125,16 @@ mkdir -p ${OUTDIR}/rootfs/home
 # on the target rootfs
 cp -r finder* writer* "${OUTDIR}/rootfs/home/"
 
-cd "/home/akka2103/assignment-2-akka2103/finder-app/conf/"
+cd /home/akka2103/assignment-2-akka2103/finder-app/conf/
 cp -r username.txt assignment.txt "${OUTDIR}/rootfs/home/"
 
 # Copy the autorun-qemu.sh script into the outdir/rootfs/home directory
-cd "/home/akka2103/assignment-2-akka2103/finder-app/"
+cd /home/akka2103/assignment-2-akka2103/finder-app/
 cp -r autorun-qemu.sh "${OUTDIR}/rootfs/home/"
 
 # TODO: Chown the root directory
+cd rootfs/
+sudo chown -R root:root *
 
 # TODO: Create initramfs.cpio.gz
 cd "$OUTDIR/rootfs"
