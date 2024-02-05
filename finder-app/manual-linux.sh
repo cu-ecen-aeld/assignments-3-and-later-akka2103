@@ -36,7 +36,9 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 
     # TODO: Add your kernel build steps here
     #Deep clean the kernel build tree, removing .config file
+    echo "make before"
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- mrproper
+    echo "make after"
 
     #Configure for our virt arm dev board(simuate in QMEU)
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig
