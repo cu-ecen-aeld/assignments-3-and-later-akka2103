@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #check if both the arguments are specified
 if [ "$#" -ne 2 ]
