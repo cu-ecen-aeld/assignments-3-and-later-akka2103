@@ -12,6 +12,7 @@ BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
 CROSS_COMPILE=aarch64-none-linux-gnu-
+SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
 
 if [ $# -lt 1 ]
 then
@@ -36,9 +37,8 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 
     # TODO: Add your kernel build steps here
     #Deep clean the kernel build tree, removing .config file
-    echo "make before"
+
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- mrproper
-    echo "make after"
 
     #Configure for our virt arm dev board(simuate in QMEU)
     make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig
@@ -57,8 +57,7 @@ echo "Adding the Image in outdir"
 cp ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ${OUTDIR}
 
 echo "Creating the staging directory for the root filesystem"
-cd "$OUTDIR"
-mkdir -p rootfs
+cd ${OUTDIR}
 if [ -d "${OUTDIR}/rootfs" ]
 then
 	echo "Deleting rootfs directory at ${OUTDIR}/rootfs and starting over"
@@ -67,6 +66,8 @@ fi
 
 # TODO: Create necessary base directories
 #Creating a folder tree
+mkdir -p ${OUTDIR}/rootfs
+cd ${OUTDIR}/rootfs
 mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir -p usr/bin usr/lib usr/sbin
 mkdir -p var/log
@@ -97,30 +98,30 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 
 #copy required files from sysroot to the lib directory
-interpreter=$(find ~/ -name "ld-linux-aarch64.so.1")
+interpreter=$(find $SYSROOT -name "ld-linux-aarch64.so.1")
 #cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib
-cp interpreter "${OUTDIR}/rootfs/lib64"
-sharedlib1=$(find ~/ -name "libm.so.6")
-cp sharedlib1 "${OUTDIR}/rootfs/lib64"
-sharedlib2=$(find ~/ -name "libresolv.so.2")
-cp sharedlib2 "${OUTDIR}/rootfs/lib64"
-sharedlib3=$(find ~/ -name "libc.so.6")
-cp sharedlib3 "${OUTDIR}/rootfs/lib64"
+cp "$interpreter" "${OUTDIR}/rootfs/lib64"
+sharedlib1=$(find $SYSROOT -name "libm.so.6")
+cp "$sharedlib1" "${OUTDIR}/rootfs/lib64"
+sharedlib2=$(find $SYSROOT -name "libresolv.so.2")
+cp "$sharedlib2" "${OUTDIR}/rootfs/lib64"
+sharedlib3=$(find $SYSROOT -name "libc.so.6")
+cp "$sharedlib3" "${OUTDIR}/rootfs/lib64"
 #cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64
-
+echo "yoo"
 
 cd "${OUTDIR}/rootfs"
 
 # TODO: Make device nodes
 #create a dev null device
-sudo mknod -m 666 dev/null c 1 3
+sudo mknod -m 666 ${OUTDIR}/rootfs/dev/null c 1 3
 
 #create dev console fevice
-sudo mknod -m 666 dev/console c 5 1
+sudo mknod -m 666 ${OUTDIR}/rootfs/dev/tty c 5 1
 
 # TODO: Clean and build the writer utility
 # Change to the directory where fibder/writer is located
-cd FINDER_APP_DIR
+cd ${FINDER_APP_DIR}
 
 # Clean the project
 make clean
@@ -133,21 +134,24 @@ mkdir -p ${OUTDIR}/rootfs/home
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cd FINDER_APP_DIR
+cd ${FINDER_APP_DIR}
 cp finder* writer* "${OUTDIR}/rootfs/home/"
 
-cd FINDER_APP_DIR/conf/
+cd ${FINDER_APP_DIR}/conf/
 cp username.txt assignment.txt "${OUTDIR}/rootfs/home/"
 
 # Copy the autorun-qemu.sh script into the outdir/rootfs/home directory
-cd FINDER_APP_DIR
+cd ${FINDER_APP_DIR}
 cp autorun-qemu.sh "${OUTDIR}/rootfs/home/"
 
 # TODO: Chown the root directory
-cd rootfs/
+cd ${OUTDIR}/rootfs/
 sudo chown -R root:root *
 
 # TODO: Create initramfs.cpio.gz
 cd "$OUTDIR/rootfs"
 find. | cpio -H newc -ov --owner root:root > ${OUTDIR}/initramfs.cpio
+echo "here"
+cd ${OUTDIR}
 gzip -f initramfs.cpio
+echo "run successful"
