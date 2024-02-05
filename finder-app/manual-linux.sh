@@ -97,14 +97,14 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 
 #copy required files from sysroot to the lib directory
-interpreter=find ~/ -name "ld-linux-aarch64.so.1"
+interpreter=$(find ~/ -name "ld-linux-aarch64.so.1")
 #cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib
 cp interpreter "${OUTDIR}/rootfs/lib64"
-sharedlib1=find ~/ -name "libm.so.6"
+sharedlib1=$(find ~/ -name "libm.so.6")
 cp sharedlib1 "${OUTDIR}/rootfs/lib64"
-sharedlib2=find ~/ -name "libresolv.so.2"
+sharedlib2=$(find ~/ -name "libresolv.so.2")
 cp sharedlib2 "${OUTDIR}/rootfs/lib64"
-sharedlib3=find ~/ -name "libc.so.6"
+sharedlib3=$(find ~/ -name "libc.so.6")
 cp sharedlib3 "${OUTDIR}/rootfs/lib64"
 #cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64
 
