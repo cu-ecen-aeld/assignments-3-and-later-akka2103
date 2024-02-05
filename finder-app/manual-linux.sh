@@ -94,10 +94,17 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # TODO: Add library dependencies to rootfs
 
 #copy required files from sysroot to the lib directory
-cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib
-cp ld-linux-aarch64.so.1 "${OUTDIR}/rootfs/lib64"
-cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64
-cp libm.so.6 libresolv.so.2 libc.so.6 "${OUTDIR}/rootfs/lib64"
+interpreter=find ~/ -name "ld-linux-aarch64.so.1"
+#cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib
+cp interpreter "${OUTDIR}/rootfs/lib64"
+sharedlib1=find ~/ -name "libm.so.6"
+cp sharedlib1 "${OUTDIR}/rootfs/lib64"
+sharedlib2=find ~/ -name "libresolv.so.2"
+cp sharedlib2 "${OUTDIR}/rootfs/lib64"
+sharedlib3=find ~/ -name "libc.so.6"
+cp sharedlib3 "${OUTDIR}/rootfs/lib64"
+#cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64
+
 
 cd "${OUTDIR}/rootfs"
 
@@ -110,7 +117,7 @@ sudo mknod -m 666 dev/console c 5 1
 
 # TODO: Clean and build the writer utility
 # Change to the directory where fibder/writer is located
-cd /home/akka2103/assignment-2-akka2103/finder-app/
+cd FINDER_APP_DIR
 
 # Clean the project
 make clean
@@ -123,14 +130,15 @@ mkdir -p ${OUTDIR}/rootfs/home
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cp -r finder* writer* "${OUTDIR}/rootfs/home/"
+cd FINDER_APP_DIR
+cp finder* writer* "${OUTDIR}/rootfs/home/"
 
-cd /home/akka2103/assignment-2-akka2103/finder-app/conf/
-cp -r username.txt assignment.txt "${OUTDIR}/rootfs/home/"
+cd FINDER_APP_DIR/conf/
+cp username.txt assignment.txt "${OUTDIR}/rootfs/home/"
 
 # Copy the autorun-qemu.sh script into the outdir/rootfs/home directory
-cd /home/akka2103/assignment-2-akka2103/finder-app/
-cp -r autorun-qemu.sh "${OUTDIR}/rootfs/home/"
+cd FINDER_APP_DIR
+cp autorun-qemu.sh "${OUTDIR}/rootfs/home/"
 
 # TODO: Chown the root directory
 cd rootfs/
