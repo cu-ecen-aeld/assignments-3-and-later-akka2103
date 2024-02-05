@@ -100,7 +100,7 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 #copy required files from sysroot to the lib directory
 interpreter=$(find $SYSROOT -name "ld-linux-aarch64.so.1")
 #cd /home/akka2103/downloads/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib
-cp "$interpreter" "${OUTDIR}/rootfs/lib64"
+cp "$interpreter" "${OUTDIR}/rootfs/lib"
 sharedlib1=$(find $SYSROOT -name "libm.so.6")
 cp "$sharedlib1" "${OUTDIR}/rootfs/lib64"
 sharedlib2=$(find $SYSROOT -name "libresolv.so.2")
