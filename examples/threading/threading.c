@@ -52,7 +52,7 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
     struct thread_data* thread_data_ptr = (struct thread_data*)malloc(sizeof(struct thread_data));
     if(thread_data_ptr == NULL)
     {
-        //ERROR_LOG((Memory allocation failed));
+        ERROR_LOG("Memory allocation failed");
 	return false;
     }
 
@@ -69,7 +69,7 @@ bool start_thread_obtaining_mutex(pthread_t *thread, pthread_mutex_t *mutex,int 
     if (create_thread_result != 0) 
     {
         free(thread_data_ptr);
-	//ERROR_LOG((Thread creation failed));
+	ERROR_LOG("Thread creation failed");
         return false;  // Thread creation failed
     }
     return true;
