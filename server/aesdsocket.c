@@ -16,13 +16,13 @@
 #define PORT "9000"
 #define MAX_BUFFER_SIZE 256
 
-int sock_fd = -1;
+int sockfd = -1;
 
 void cleanup_and_exit(int status)
 {
     syslog(LOG_INFO, "Closing aesdsocket application");
     closelog();
-    close(sock_fd);
+    close(sockfd);
     remove(LOG_FILE_LOC);
     exit(status);
 }
@@ -144,15 +144,15 @@ int main(int argc, char* argv[])
     server_addr.sin_port = htons(atoi(PORT));
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock_fd == -1)
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1)
     {
         syslog(LOG_ERR, "Error creating socket: %m");
         cleanup_and_exit(EXIT_FAILURE);
     }
 
     int optval = 1;
-    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != 0)
     {
         syslog(LOG_ERR, "Error setting socket options: %m");
         cleanup_and_exit(EXIT_FAILURE);
@@ -163,13 +163,13 @@ int main(int argc, char* argv[])
         daemonize();
     }
 
-    if (bind(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) != 0)
+    if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) != 0)
     {
         syslog(LOG_ERR, "Error binding: %m");
         cleanup_and_exit(EXIT_FAILURE);
     }
 
-    if (listen(sock_fd, 5) != 0)
+    if (listen(sockfd, 5) != 0)
     {
         syslog(LOG_ERR, "Error listening: %m");
         cleanup_and_exit(EXIT_FAILURE);
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
     {
         struct sockaddr_in client_addr;
         socklen_t client_addr_size = sizeof(client_addr);
-        int client_fd = accept(sock_fd, (struct sockaddr*)&client_addr, &client_addr_size);
+        int client_fd = accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
 
         if (client_fd == -1)
        	{
