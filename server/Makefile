@@ -21,7 +21,7 @@ all: $(TARGET)
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o $@ $^
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o $@ $^ -pthread
 
 # Rule to build object files
 %.o: %.c

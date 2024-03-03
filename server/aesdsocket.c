@@ -11,12 +11,44 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/queue.h>
+#include <pthread.h>
+#include <time.h>
+#include <sys/time.h>
 
 #define LOG_FILE_LOC "/var/tmp/aesdsocketdata"
 #define PORT "9000"
 #define MAX_BUFFER_SIZE 1024
+#define TIMESTAMP_INTERVAL 10 // seconds
+
+pthread_mutex_t aesdsock_mutex;
+pthread_mutex_t thread_list_mutex;
+pthread_mutex_t timer_mutex;
+pthread_t timer_thread;
+time_t last_timestamp;
+
+struct thread_data_s
+{
+    pthread_t id;
+    int cfd;
+    char peer_ip[INET6_ADDRSTRLEN];
+    bool thread_complete_flag;
+    SLIST_ENTRY(thread_data_s) next;
+};
 
 int sockfd = -1;
+SLIST_HEAD(thread_list, thread_data_s) thread_head = SLIST_HEAD_INITIALIZER(thread_head);
+
+// Function declarations
+void cleanup_and_exit(int status);
+void signal_handler(int signo);
+void setup_signal_handler();
+void *thread_function(void *arg);
+void handle_client_connection(int client_fd);
+void daemonize();
+void add_thread(int client_fd, const char *ip_addr);
+void setup_timer();
+void timer_handler(int signo);
 
 void cleanup_and_exit(int status)
 {
@@ -24,6 +56,29 @@ void cleanup_and_exit(int status)
     closelog();
     close(sockfd);
     remove(LOG_FILE_LOC);
+
+    // Lock the mutex before deallocating memory
+    pthread_mutex_lock(&thread_list_mutex);
+
+    // Deallocate memory and join threads
+    struct thread_data_s *entry;
+    SLIST_FOREACH(entry, &thread_head, next)
+    {
+        pthread_join(entry->id, NULL);
+        free(entry);
+    }
+
+    // Unlock the mutex after deallocating memory
+    pthread_mutex_unlock(&thread_list_mutex);
+
+    // Cleanup timer resources
+    pthread_cancel(timer_thread);
+    pthread_join(timer_thread, NULL);
+    pthread_mutex_destroy(&timer_mutex);
+
+    pthread_mutex_destroy(&aesdsock_mutex);
+    pthread_mutex_destroy(&thread_list_mutex);
+
     exit(status);
 }
 
@@ -46,88 +101,89 @@ void setup_signal_handler()
     }
 }
 
+void *thread_function(void *arg)
+{
+    struct thread_data_s *thread_data = (struct thread_data_s *)arg;
+    handle_client_connection(thread_data->cfd);
+    thread_data->thread_complete_flag = true;
+    pthread_exit(NULL);
+}
+
 void handle_client_connection(int client_fd)
 {
     FILE *fp = fopen(LOG_FILE_LOC, "a+");
-    bool flag=0;
-   int index=0; 
-    char *bptr=(char*)malloc(sizeof(char)*MAX_BUFFER_SIZE);
-   // int byte_count=0;
+    bool flag = 0;
+    int index = 0;
+    char *bptr = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
+
     while (1)
     {
-        ssize_t bytes_recv = recv(client_fd,bptr+ index, sizeof(char)*(MAX_BUFFER_SIZE), 0);
+        ssize_t bytes_recv = recv(client_fd, bptr + index, sizeof(char) * (MAX_BUFFER_SIZE), 0);
         if (bytes_recv <= 0)
-       	{
+        {
             break;
         }
-        index+=bytes_recv;
-      //  byte_count=bytes_recv;
-        if(index>=MAX_BUFFER_SIZE)
+        index += bytes_recv;
+        if (index >= MAX_BUFFER_SIZE)
         {
-            //realloc
-            char *newBptr = (char *)realloc(bptr,sizeof(char)*(index+MAX_BUFFER_SIZE+index));
+            char *newBptr = (char *)realloc(bptr, sizeof(char) * (index + MAX_BUFFER_SIZE + index));
 
             if (newBptr != NULL)
             {
-            // realloc successful
                 bptr = newBptr;
-            } else
+            }
+            else
             {
-                //realloc failed
-                break; 
+                break;
             }
         }
-        
-        
-        //fwrite(buffer, bytes_recv, 1, fp);
 
         if (memchr(bptr, '\n', index) != NULL)
-       {
-            flag=1;
+        {
+            flag = 1;
             break;
         }
     }
-   //printf("%d=%s\n",index,bptr);
-    if(flag==1)
+
+    if (flag == 1)
     {
-        flag=0;
-        fwrite(bptr, index,1,fp);
+        flag = 0;
+
+        // Lock the mutex before writing to the file
+        pthread_mutex_lock(&aesdsock_mutex);
+
+        fwrite(bptr, index, 1, fp);
         fclose(fp);
         free(bptr);
-    
-fp = fopen(LOG_FILE_LOC, "rb");
-if (fp != NULL)
-{
-    fseek(fp, 0, SEEK_END);
-    long file_size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
 
-    // Allocate space for the entire content plus null terminator
-    char *rptr = (char *)malloc(sizeof(char) * (file_size + 1));
+        // Unlock the mutex after writing to the file
+        pthread_mutex_unlock(&aesdsock_mutex);
 
-    if (rptr != NULL)
-    {
-        // Read the entire content into rptr
-        size_t bytes_read = fread(rptr, 1, file_size, fp);
+        fp = fopen(LOG_FILE_LOC, "rb");
+        if (fp != NULL)
+        {
+            fseek(fp, 0, SEEK_END);
+            long file_size = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
 
-        // Null-terminate the string
-        //rptr[bytes_read] = '\0';
+            char *rptr = (char *)malloc(sizeof(char) * (file_size + 1));
 
-        //printf("%s", rptr);
+            if (rptr != NULL)
+            {
+                size_t bytes_read = fread(rptr, 1, file_size, fp);
 
-        // Send the content to the client
-        send(client_fd, rptr, bytes_read, 0);
+                fclose(fp);
 
-        // Free allocated memory
-        free(rptr);
+                // Send the content to the client
+                send(client_fd, rptr, bytes_read, 0);
+
+                // Free allocated memory
+                free(rptr);
+            }
+        }
     }
-
-    // Close the file
-    fclose(fp);
-}
 
     close(client_fd);
-    }
 }
 
 void daemonize()
@@ -138,7 +194,8 @@ void daemonize()
     {
         syslog(LOG_ERR, "Error forking: %m");
         cleanup_and_exit(EXIT_FAILURE);
-    } else if (pid > 0)
+    }
+    else if (pid > 0)
     {
         exit(EXIT_SUCCESS); // Parent exits
     }
@@ -151,12 +208,10 @@ void daemonize()
 
     chdir("/"); // Change working directory to root
 
-    // Close standard file descriptors
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
-    // Redirect stdin/out/err to /dev/null
     int dev_null = open("/dev/null", O_RDWR);
     if (dev_null == -1)
     {
@@ -171,7 +226,73 @@ void daemonize()
     close(dev_null);
 }
 
-int main(int argc, char* argv[])
+void setup_timer()
+{
+    struct itimerval timer;
+    struct sigaction sa;
+
+    // Initialize the timer mutex
+    pthread_mutex_init(&timer_mutex, NULL);
+
+    // Setup the signal handler for the timer
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = timer_handler;
+    sigaction(SIGALRM, &sa, NULL);
+
+    // Configure the timer to expire every TIMESTAMP_INTERVAL seconds
+    timer.it_interval.tv_sec = TIMESTAMP_INTERVAL;
+    timer.it_interval.tv_usec = 0;
+    timer.it_value = timer.it_interval;
+
+    // Set the timer
+    setitimer(ITIMER_REAL, &timer, NULL);
+    last_timestamp = time(NULL);
+}
+
+void timer_handler(int signo)
+{
+    time_t current_time = time(NULL);
+    char timestamp[50];
+
+    // Lock the mutex before updating last_timestamp
+    pthread_mutex_lock(&timer_mutex);
+
+    // Append timestamp every TIMESTAMP_INTERVAL seconds
+    if (current_time - last_timestamp >= TIMESTAMP_INTERVAL)
+    {
+        // Update last_timestamp
+        last_timestamp = current_time;
+
+        // Unlock the mutex after updating last_timestamp
+        pthread_mutex_unlock(&timer_mutex);
+
+        // Get the formatted timestamp
+        struct tm *timeinfo;
+        timeinfo = localtime(&current_time);
+        strftime(timestamp, sizeof(timestamp), "timestamp:%a, %d %b %Y %H:%M:%S %z", timeinfo);
+
+        // Lock the mutex before writing to the file
+        pthread_mutex_lock(&aesdsock_mutex);
+
+        // Open the file in append mode
+        FILE *fp = fopen(LOG_FILE_LOC, "a");
+        if (fp != NULL)
+        {
+            fprintf(fp, "%s\n", timestamp);
+            fclose(fp);
+        }
+
+        // Unlock the mutex after writing to the file
+        pthread_mutex_unlock(&aesdsock_mutex);
+    }
+    else
+    {
+        // Unlock the mutex if the timestamp is not appended
+        pthread_mutex_unlock(&timer_mutex);
+    }
+}
+
+int main(int argc, char *argv[])
 {
     openlog("AESD Socket", LOG_PID | LOG_NDELAY, LOG_USER);
 
@@ -183,6 +304,8 @@ int main(int argc, char* argv[])
     }
 
     setup_signal_handler();
+    pthread_mutex_init(&aesdsock_mutex, NULL);
+    pthread_mutex_init(&thread_list_mutex, NULL);
 
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
@@ -209,7 +332,7 @@ int main(int argc, char* argv[])
         daemonize();
     }
 
-    if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) != 0)
+    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
     {
         syslog(LOG_ERR, "Error binding: %m");
         cleanup_and_exit(EXIT_FAILURE);
@@ -223,14 +346,17 @@ int main(int argc, char* argv[])
 
     syslog(LOG_INFO, "Listening on port %s", PORT);
 
+    // Setup the timer thread
+    setup_timer();
+
     while (1)
     {
         struct sockaddr_in client_addr;
         socklen_t client_addr_size = sizeof(client_addr);
-        int client_fd = accept(sockfd, (struct sockaddr*)&client_addr, &client_addr_size);
+        int client_fd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_size);
 
         if (client_fd == -1)
-       	{
+        {
             syslog(LOG_ERR, "Issue accepting connection: %m");
             continue;
         }
@@ -239,12 +365,64 @@ int main(int argc, char* argv[])
         inet_ntop(AF_INET, &client_addr.sin_addr, ip_addr, sizeof(ip_addr));
         syslog(LOG_USER, "Accepted connection from %s", ip_addr);
 
-        handle_client_connection(client_fd);
+        struct thread_data_s *thread_data = (struct thread_data_s *)malloc(sizeof(struct thread_data_s));
+        if (thread_data == NULL)
+        {
+            syslog(LOG_ERR, "Error allocating memory for thread data");
+            close(client_fd);
+            continue;
+        }
 
-        syslog(LOG_USER, "Closed connection from %s", ip_addr);
+        thread_data->cfd = client_fd;
+        strcpy(thread_data->peer_ip, ip_addr);
+        thread_data->thread_complete_flag = false;
+
+        // Lock the mutex before modifying the linked list
+        pthread_mutex_lock(&thread_list_mutex);
+
+        SLIST_INSERT_HEAD(&thread_head, thread_data, next);
+
+        // Unlock the mutex after modifying the linked list
+        pthread_mutex_unlock(&thread_list_mutex);
+
+        // Create a new thread to handle the connection
+        if (pthread_create(&thread_data->id, NULL, thread_function, (void *)thread_data) != 0)
+        {
+            syslog(LOG_ERR, "Error creating thread");
+            close(client_fd);
+
+            // Lock the mutex before modifying the linked list
+            pthread_mutex_lock(&thread_list_mutex);
+
+            SLIST_REMOVE(&thread_head, thread_data, thread_data_s, next);
+
+            // Unlock the mutex after modifying the linked list
+            pthread_mutex_unlock(&thread_list_mutex);
+
+            free(thread_data);
+        }
+
+        // Check for completion and join threads
+        struct thread_data_s *entry;
+        SLIST_FOREACH(entry, &thread_head, next)
+        {
+            if (entry->thread_complete_flag)
+            {
+                pthread_join(entry->id, NULL);
+
+                // Lock the mutex before deallocating memory
+                pthread_mutex_lock(&thread_list_mutex);
+
+                SLIST_REMOVE(&thread_head, entry, thread_data_s, next);
+
+                // Unlock the mutex after deallocating memory
+                pthread_mutex_unlock(&thread_list_mutex);
+
+                free(entry);
+            }
+        }
     }
 
     cleanup_and_exit(EXIT_SUCCESS);
 }
-
 
