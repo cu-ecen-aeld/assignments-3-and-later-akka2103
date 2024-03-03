@@ -14,7 +14,7 @@
 
 #define LOG_FILE_LOC "/var/tmp/aesdsocketdata"
 #define PORT "9000"
-#define MAX_BUFFER_SIZE 256
+#define MAX_BUFFER_SIZE 1024
 
 int sockfd = -1;
 
@@ -49,39 +49,85 @@ void setup_signal_handler()
 void handle_client_connection(int client_fd)
 {
     FILE *fp = fopen(LOG_FILE_LOC, "a+");
-    char buffer[MAX_BUFFER_SIZE];
-
+    bool flag=0;
+   int index=0; 
+    char *bptr=(char*)malloc(sizeof(char)*MAX_BUFFER_SIZE);
+   // int byte_count=0;
     while (1)
     {
-        ssize_t bytes_recv = recv(client_fd, buffer, sizeof(buffer), 0);
+        ssize_t bytes_recv = recv(client_fd,bptr+ index, sizeof(char)*(MAX_BUFFER_SIZE), 0);
         if (bytes_recv <= 0)
        	{
             break;
         }
+        index+=bytes_recv;
+      //  byte_count=bytes_recv;
+        if(index>=MAX_BUFFER_SIZE)
+        {
+            //realloc
+            char *newBptr = (char *)realloc(bptr,sizeof(char)*(index+MAX_BUFFER_SIZE+index));
 
-        fwrite(buffer, bytes_recv, 1, fp);
+            if (newBptr != NULL)
+            {
+            // realloc successful
+                bptr = newBptr;
+            } else
+            {
+                //realloc failed
+                break; 
+            }
+        }
+        
+        
+        //fwrite(buffer, bytes_recv, 1, fp);
 
-        if (memchr(buffer, '\n', bytes_recv) != NULL)
-       	{
+        if (memchr(bptr, '\n', index) != NULL)
+       {
+            flag=1;
             break;
         }
     }
-
-    fclose(fp);
-
-    fp = fopen(LOG_FILE_LOC, "r");
-    while (!feof(fp))
+   //printf("%d=%s\n",index,bptr);
+    if(flag==1)
     {
-        ssize_t bytes_read = fread(buffer, 1, sizeof(buffer), fp);
-        if (bytes_read <= 0) {
-            break;
-        }
+        flag=0;
+        fwrite(bptr, index,1,fp);
+        fclose(fp);
+        free(bptr);
+    
+fp = fopen(LOG_FILE_LOC, "rb");
+if (fp != NULL)
+{
+    fseek(fp, 0, SEEK_END);
+    long file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
 
-        send(client_fd, buffer, bytes_read, 0);
+    // Allocate space for the entire content plus null terminator
+    char *rptr = (char *)malloc(sizeof(char) * (file_size + 1));
+
+    if (rptr != NULL)
+    {
+        // Read the entire content into rptr
+        size_t bytes_read = fread(rptr, 1, file_size, fp);
+
+        // Null-terminate the string
+        //rptr[bytes_read] = '\0';
+
+        //printf("%s", rptr);
+
+        // Send the content to the client
+        send(client_fd, rptr, bytes_read, 0);
+
+        // Free allocated memory
+        free(rptr);
     }
 
+    // Close the file
     fclose(fp);
+}
+
     close(client_fd);
+    }
 }
 
 void daemonize()
