@@ -58,26 +58,61 @@ void cleanup_and_exit(int status)
     remove(LOG_FILE_LOC);
 
     // Lock the mutex before deallocating memory
-    pthread_mutex_lock(&thread_list_mutex);
+    if (pthread_mutex_lock(&thread_list_mutex) != 0)
+    {
+        syslog(LOG_ERR, "Error locking thread list mutex");
+        exit(EXIT_FAILURE);
+    }
 
     // Deallocate memory and join threads
     struct thread_data_s *entry;
     SLIST_FOREACH(entry, &thread_head, next)
     {
-        pthread_join(entry->id, NULL);
+        if (pthread_join(entry->id, NULL) != 0)
+        {
+            syslog(LOG_ERR, "Error joining thread");
+            exit(EXIT_FAILURE);
+        }
         free(entry);
     }
 
     // Unlock the mutex after deallocating memory
-    pthread_mutex_unlock(&thread_list_mutex);
+    if (pthread_mutex_unlock(&thread_list_mutex) != 0)
+    {
+        syslog(LOG_ERR, "Error unlocking thread list mutex");
+        exit(EXIT_FAILURE);
+    }
 
     // Cleanup timer resources
-    pthread_cancel(timer_thread);
-    pthread_join(timer_thread, NULL);
-    pthread_mutex_destroy(&timer_mutex);
+    if (pthread_cancel(timer_thread) != 0)
+    {
+        syslog(LOG_ERR, "Error canceling timer thread");
+        exit(EXIT_FAILURE);
+    }
 
-    pthread_mutex_destroy(&aesdsock_mutex);
-    pthread_mutex_destroy(&thread_list_mutex);
+    if (pthread_join(timer_thread, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error joining timer thread");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_mutex_destroy(&timer_mutex) != 0)
+    {
+        syslog(LOG_ERR, "Error destroying timer mutex");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_mutex_destroy(&aesdsock_mutex) != 0)
+    {
+        syslog(LOG_ERR, "Error destroying aesdsock mutex");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_mutex_destroy(&thread_list_mutex) != 0)
+    {
+        syslog(LOG_ERR, "Error destroying thread list mutex");
+        exit(EXIT_FAILURE);
+    }
 
     exit(status);
 }
@@ -116,6 +151,14 @@ void handle_client_connection(int client_fd)
     int index = 0;
     char *bptr = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
 
+    if (fp == NULL)
+    {
+        syslog(LOG_ERR, "Error opening file for writing: %m");
+        free(bptr);
+        close(client_fd);
+        return;
+    }
+
     while (1)
     {
         ssize_t bytes_recv = recv(client_fd, bptr + index, sizeof(char) * (MAX_BUFFER_SIZE), 0);
@@ -134,7 +177,11 @@ void handle_client_connection(int client_fd)
             }
             else
             {
-                break;
+                syslog(LOG_ERR, "Error reallocating memory");
+                free(bptr);
+                fclose(fp);
+                close(client_fd);
+                return;
             }
         }
 
@@ -150,14 +197,26 @@ void handle_client_connection(int client_fd)
         flag = 0;
 
         // Lock the mutex before writing to the file
-        pthread_mutex_lock(&aesdsock_mutex);
+        if (pthread_mutex_lock(&aesdsock_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error locking aesdsock mutex");
+            free(bptr);
+            fclose(fp);
+            close(client_fd);
+            return;
+        }
 
         fwrite(bptr, index, 1, fp);
         fclose(fp);
         free(bptr);
 
         // Unlock the mutex after writing to the file
-        pthread_mutex_unlock(&aesdsock_mutex);
+        if (pthread_mutex_unlock(&aesdsock_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error unlocking aesdsock mutex");
+            close(client_fd);
+            return;
+        }
 
         fp = fopen(LOG_FILE_LOC, "rb");
         if (fp != NULL)
@@ -175,7 +234,10 @@ void handle_client_connection(int client_fd)
                 fclose(fp);
 
                 // Send the content to the client
-                send(client_fd, rptr, bytes_read, 0);
+                if (send(client_fd, rptr, bytes_read, 0) == -1)
+                {
+                    syslog(LOG_ERR, "Error sending data to client: %m");
+                }
 
                 // Free allocated memory
                 free(rptr);
@@ -232,12 +294,20 @@ void setup_timer()
     struct sigaction sa;
 
     // Initialize the timer mutex
-    pthread_mutex_init(&timer_mutex, NULL);
+    if (pthread_mutex_init(&timer_mutex, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error initializing timer mutex");
+        cleanup_and_exit(EXIT_FAILURE);
+    }
 
     // Setup the signal handler for the timer
     memset(&sa, 0, sizeof(struct sigaction));
     sa.sa_handler = timer_handler;
-    sigaction(SIGALRM, &sa, NULL);
+    if (sigaction(SIGALRM, &sa, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error setting up timer signal handler");
+        cleanup_and_exit(EXIT_FAILURE);
+    }
 
     // Configure the timer to expire every TIMESTAMP_INTERVAL seconds
     timer.it_interval.tv_sec = TIMESTAMP_INTERVAL;
@@ -245,7 +315,12 @@ void setup_timer()
     timer.it_value = timer.it_interval;
 
     // Set the timer
-    setitimer(ITIMER_REAL, &timer, NULL);
+    if (setitimer(ITIMER_REAL, &timer, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error setting timer");
+        cleanup_and_exit(EXIT_FAILURE);
+    }
+
     last_timestamp = time(NULL);
 }
 
@@ -255,7 +330,11 @@ void timer_handler(int signo)
     char timestamp[50];
 
     // Lock the mutex before updating last_timestamp
-    pthread_mutex_lock(&timer_mutex);
+    if (pthread_mutex_lock(&timer_mutex) != 0)
+    {
+        syslog(LOG_ERR, "Error locking timer mutex");
+        return;
+    }
 
     // Append timestamp every TIMESTAMP_INTERVAL seconds
     if (current_time - last_timestamp >= TIMESTAMP_INTERVAL)
@@ -264,7 +343,11 @@ void timer_handler(int signo)
         last_timestamp = current_time;
 
         // Unlock the mutex after updating last_timestamp
-        pthread_mutex_unlock(&timer_mutex);
+        if (pthread_mutex_unlock(&timer_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error unlocking timer mutex");
+            return;
+        }
 
         // Get the formatted timestamp
         struct tm *timeinfo;
@@ -272,7 +355,11 @@ void timer_handler(int signo)
         strftime(timestamp, sizeof(timestamp), "timestamp:%a, %d %b %Y %H:%M:%S %z", timeinfo);
 
         // Lock the mutex before writing to the file
-        pthread_mutex_lock(&aesdsock_mutex);
+        if (pthread_mutex_lock(&aesdsock_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error locking aesdsock mutex");
+            return;
+        }
 
         // Open the file in append mode
         FILE *fp = fopen(LOG_FILE_LOC, "a");
@@ -283,12 +370,20 @@ void timer_handler(int signo)
         }
 
         // Unlock the mutex after writing to the file
-        pthread_mutex_unlock(&aesdsock_mutex);
+        if (pthread_mutex_unlock(&aesdsock_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error unlocking aesdsock mutex");
+            return;
+        }
     }
     else
     {
         // Unlock the mutex if the timestamp is not appended
-        pthread_mutex_unlock(&timer_mutex);
+        if (pthread_mutex_unlock(&timer_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error unlocking timer mutex");
+            return;
+        }
     }
 }
 
@@ -304,8 +399,17 @@ int main(int argc, char *argv[])
     }
 
     setup_signal_handler();
-    pthread_mutex_init(&aesdsock_mutex, NULL);
-    pthread_mutex_init(&thread_list_mutex, NULL);
+    if (pthread_mutex_init(&aesdsock_mutex, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error initializing aesdsock mutex");
+        cleanup_and_exit(EXIT_FAILURE);
+    }
+
+    if (pthread_mutex_init(&thread_list_mutex, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error initializing thread list mutex");
+        cleanup_and_exit(EXIT_FAILURE);
+    }
 
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
@@ -378,12 +482,24 @@ int main(int argc, char *argv[])
         thread_data->thread_complete_flag = false;
 
         // Lock the mutex before modifying the linked list
-        pthread_mutex_lock(&thread_list_mutex);
+        if (pthread_mutex_lock(&thread_list_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error locking thread list mutex");
+            free(thread_data);
+            close(client_fd);
+            continue;
+        }
 
         SLIST_INSERT_HEAD(&thread_head, thread_data, next);
 
         // Unlock the mutex after modifying the linked list
-        pthread_mutex_unlock(&thread_list_mutex);
+        if (pthread_mutex_unlock(&thread_list_mutex) != 0)
+        {
+            syslog(LOG_ERR, "Error unlocking thread list mutex");
+            free(thread_data);
+            close(client_fd);
+            continue;
+        }
 
         // Create a new thread to handle the connection
         if (pthread_create(&thread_data->id, NULL, thread_function, (void *)thread_data) != 0)
@@ -392,12 +508,20 @@ int main(int argc, char *argv[])
             close(client_fd);
 
             // Lock the mutex before modifying the linked list
-            pthread_mutex_lock(&thread_list_mutex);
+            if (pthread_mutex_lock(&thread_list_mutex) != 0)
+            {
+                syslog(LOG_ERR, "Error locking thread list mutex");
+                cleanup_and_exit(EXIT_FAILURE);
+            }
 
             SLIST_REMOVE(&thread_head, thread_data, thread_data_s, next);
 
             // Unlock the mutex after modifying the linked list
-            pthread_mutex_unlock(&thread_list_mutex);
+            if (pthread_mutex_unlock(&thread_list_mutex) != 0)
+            {
+                syslog(LOG_ERR, "Error unlocking thread list mutex");
+                cleanup_and_exit(EXIT_FAILURE);
+            }
 
             free(thread_data);
         }
@@ -408,15 +532,27 @@ int main(int argc, char *argv[])
         {
             if (entry->thread_complete_flag)
             {
-                pthread_join(entry->id, NULL);
+                if (pthread_join(entry->id, NULL) != 0)
+                {
+                    syslog(LOG_ERR, "Error joining thread");
+                    cleanup_and_exit(EXIT_FAILURE);
+                }
 
                 // Lock the mutex before deallocating memory
-                pthread_mutex_lock(&thread_list_mutex);
+                if (pthread_mutex_lock(&thread_list_mutex) != 0)
+                {
+                    syslog(LOG_ERR, "Error locking thread list mutex");
+                    cleanup_and_exit(EXIT_FAILURE);
+                }
 
                 SLIST_REMOVE(&thread_head, entry, thread_data_s, next);
 
                 // Unlock the mutex after deallocating memory
-                pthread_mutex_unlock(&thread_list_mutex);
+                if (pthread_mutex_unlock(&thread_list_mutex) != 0)
+                {
+                    syslog(LOG_ERR, "Error unlocking thread list mutex");
+                    cleanup_and_exit(EXIT_FAILURE);
+                }
 
                 free(entry);
             }
