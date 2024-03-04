@@ -177,6 +177,7 @@ void handle_client_connection(int client_fd)
             if (newBptr != NULL)
             {
                 bptr = newBptr;
+                free(newBptr);
             }
             else
             {
@@ -506,12 +507,14 @@ int main(int argc, char *argv[])
         if (pthread_create(&thread_data->id, NULL, thread_function, (void *)thread_data) != 0)
         {
             syslog(LOG_ERR, "Error creating thread");
+            free(thread_data);
             close(client_fd);
 
             // Lock the mutex before modifying the linked list
             if (pthread_mutex_lock(&thread_list_mutex) != 0)
             {
                 syslog(LOG_ERR, "Error locking thread list mutex");
+                free(thread_data);
                 cleanup_and_exit(EXIT_FAILURE);
             }
 
@@ -521,6 +524,7 @@ int main(int argc, char *argv[])
             if (pthread_mutex_unlock(&thread_list_mutex) != 0)
             {
                 syslog(LOG_ERR, "Error unlocking thread list mutex");
+                free(thread_data);
                 cleanup_and_exit(EXIT_FAILURE);
             }
 
@@ -535,6 +539,7 @@ int main(int argc, char *argv[])
             {
                 if (pthread_join(entry->id, NULL) != 0)
                 {
+                    free(thread_data);
                     syslog(LOG_ERR, "Error joining thread");
                     cleanup_and_exit(EXIT_FAILURE);
                 }
@@ -542,6 +547,7 @@ int main(int argc, char *argv[])
                 // Lock the mutex before deallocating memory
                 if (pthread_mutex_lock(&thread_list_mutex) != 0)
                 {
+                    free(thread_data);
                     syslog(LOG_ERR, "Error locking thread list mutex");
                     cleanup_and_exit(EXIT_FAILURE);
                 }
@@ -551,6 +557,7 @@ int main(int argc, char *argv[])
                 // Unlock the mutex after deallocating memory
                 if (pthread_mutex_unlock(&thread_list_mutex) != 0)
                 {
+                    free(thread_data);
                     syslog(LOG_ERR, "Error unlocking thread list mutex");
                     cleanup_and_exit(EXIT_FAILURE);
                 }
@@ -559,7 +566,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+	//free(thread_data);
     cleanup_and_exit(EXIT_SUCCESS);
 }
 
