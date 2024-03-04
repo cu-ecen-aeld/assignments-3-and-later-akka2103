@@ -3,9 +3,10 @@
 # Compiler and compilation flags
 CC ?= gcc
 CFLAGS ?= -Wall -Werror
+LDFLAGS ?= -pthread -lrt
 
 # Cross compilation support
-CROSS_COMPILE ?=
+CROSS_COMPILE ?= $(CROSS_COMPLIE)
 
 # Target executable
 TARGET = aesdsocket
@@ -21,11 +22,11 @@ all: $(TARGET)
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o $@ $^ -pthread
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # Rule to build object files
 %.o: %.c
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c -o $@ $<
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) $(LDFLAGS) -c -o $@ $<
 
 # Clean up
 clean:
