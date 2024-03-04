@@ -1,179 +1,167 @@
-==64200== Memcheck, a memory error detector
-==64200== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==64200== Using Valgrind-3.15.0-608cb11914-20190413 and LibVEX; rerun with -h for copyright info
-==64200== Command: ./aesdsocket
-==64200== Parent PID: 64196
-==64200== 
---64200-- 
---64200-- Valgrind options:
---64200--    --error-exitcode=1
---64200--    --leak-check=full
---64200--    --show-leak-kinds=all
---64200--    --track-origins=yes
---64200--    --errors-for-leak-kinds=definite
---64200--    --verbose
---64200--    --log-file=valgrind-out.txt
---64200-- Contents of /proc/version:
---64200--   Linux version 5.15.0-97-generic (buildd@lcy02-amd64-102) (gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0, GNU ld (GNU Binutils for Ubuntu) 2.34) #107~20.04.1-Ubuntu SMP Fri Feb 9 14:20:11 UTC 2024
---64200-- 
---64200-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-rdrand
---64200-- Page sizes: currently 4096, max supported 4096
---64200-- Valgrind library directory: /usr/lib/x86_64-linux-gnu/valgrind
---64200-- Reading syms from /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-2.31.so
---64200--   Considering /usr/lib/debug/.build-id/7a/e2aaae1a0e5b262df913ee0885582d2e327982.debug ..
---64200--   .. build-id is valid
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux
---64200--    object doesn't have a symbol table
---64200--    object doesn't have a dynamic symbol table
---64200-- Scheduler: using generic scheduler lock implementation.
---64200-- Reading suppressions file: /usr/lib/x86_64-linux-gnu/valgrind/default.supp
-==64200== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-64200-by-akash-on-???
-==64200== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-64200-by-akash-on-???
-==64200== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-64200-by-akash-on-???
-==64200== 
-==64200== TO CONTROL THIS PROCESS USING vgdb (which you probably
-==64200== don't want to do, unless you know exactly what you're doing,
-==64200== or are doing some strange experiment):
-==64200==   /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=64200 ...command...
-==64200== 
-==64200== TO DEBUG THIS PROCESS USING GDB: start GDB like this
-==64200==   /path/to/gdb ./aesdsocket
-==64200== and then give GDB the following command
-==64200==   target remote | /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=64200
-==64200== --pid is optional if only one valgrind process is running
-==64200== 
---64200-- REDIR: 0x4022e20 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c9ce2 (???)
---64200-- REDIR: 0x4022bf0 (ld-linux-x86-64.so.2:index) redirected to 0x580c9cfc (???)
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_core-amd64-linux.so
---64200--    object doesn't have a symbol table
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so
---64200--    object doesn't have a symbol table
-==64200== WARNING: new redirection conflicts with existing -- ignoring it
---64200--     old: 0x04022e20 (strlen              ) R-> (0000.0) 0x580c9ce2 ???
---64200--     new: 0x04022e20 (strlen              ) R-> (2007.0) 0x0483f060 strlen
---64200-- REDIR: 0x401f600 (ld-linux-x86-64.so.2:strcmp) redirected to 0x483ffd0 (strcmp)
---64200-- REDIR: 0x4023380 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4843a20 (mempcpy)
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
---64200--   Considering /usr/lib/debug/.build-id/0c/044ba611aeeeaebb8374e660061f341ebc0bac.debug ..
---64200--   .. build-id is valid
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/libc-2.31.so
---64200--   Considering /usr/lib/debug/.build-id/ee/be5d5f4b608b8a53ec446b63981bba373ca0ca.debug ..
---64200--   .. build-id is valid
---64200-- REDIR: 0x491f480 (libc.so.6:memmove) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e780 (libc.so.6:strncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f7b0 (libc.so.6:strcasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e0a0 (libc.so.6:strcat) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e7e0 (libc.so.6:rindex) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x4920c50 (libc.so.6:rawmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x493bce0 (libc.so.6:wmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x493b820 (libc.so.6:wcscmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f5e0 (libc.so.6:mempcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f410 (libc.so.6:bcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e710 (libc.so.6:strncmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e150 (libc.so.6:strcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f540 (libc.so.6:memset) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x493b7e0 (libc.so.6:wcschr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e670 (libc.so.6:strnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e230 (libc.so.6:strcspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f800 (libc.so.6:strncasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e1d0 (libc.so.6:strcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f950 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x493cf50 (libc.so.6:wcsnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x493b860 (libc.so.6:wcscpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e820 (libc.so.6:strpbrk) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e100 (libc.so.6:index) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491e630 (libc.so.6:strlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x4927bb0 (libc.so.6:memrchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f850 (libc.so.6:strcasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f3d0 (libc.so.6:memchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x493b930 (libc.so.6:wcslen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491eae0 (libc.so.6:strspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f750 (libc.so.6:stpncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f6f0 (libc.so.6:stpcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x4920c90 (libc.so.6:strchrnul) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x491f8a0 (libc.so.6:strncasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---64200-- REDIR: 0x4a07730 (libc.so.6:__strrchr_avx2) redirected to 0x483ea10 (rindex)
---64200-- REDIR: 0x4a0ad90 (libc.so.6:__memset_avx2_unaligned_erms) redirected to 0x48428e0 (memset)
---64200-- REDIR: 0x49190e0 (libc.so.6:malloc) redirected to 0x483b780 (malloc)
---64200-- REDIR: 0x491ab10 (libc.so.6:calloc) redirected to 0x483dce0 (calloc)
---64200-- REDIR: 0x4a07540 (libc.so.6:__strchrnul_avx2) redirected to 0x4843540 (strchrnul)
---64200-- REDIR: 0x4a07900 (libc.so.6:__strlen_avx2) redirected to 0x483ef40 (strlen)
---64200-- REDIR: 0x49196d0 (libc.so.6:free) redirected to 0x483c9d0 (free)
---64200-- REDIR: 0x4a0a910 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x48429f0 (memmove)
---64200-- REDIR: 0x491efa0 (libc.so.6:__GI_strstr) redirected to 0x4843ca0 (__strstr_sse2)
---64200-- REDIR: 0x4a03ef0 (libc.so.6:__memcmp_avx2_movbe) redirected to 0x48421e0 (bcmp)
---64200-- REDIR: 0x4a02df0 (libc.so.6:__strcmp_avx2) redirected to 0x483fed0 (strcmp)
---64200-- REDIR: 0x4919e80 (libc.so.6:realloc) redirected to 0x483df30 (realloc)
---64200-- REDIR: 0x4a08e40 (libc.so.6:__strcpy_avx2) redirected to 0x483f090 (strcpy)
---64200-- REDIR: 0x4a0a8f0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x4843660 (mempcpy)
---64200-- REDIR: 0x4a03760 (libc.so.6:__memchr_avx2) redirected to 0x4840050 (memchr)
---64200-- Reading syms from /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
---64200--    object doesn't have a symbol table
-==64200== Invalid read of size 8
-==64200==    at 0x10B797: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Address 0x4a7a150 is 64 bytes inside a block of size 72 free'd
-==64200==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10B792: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Block was alloc'd at
-==64200==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10B46E: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200== 
---64200-- REDIR: 0x4a09b30 (libc.so.6:__stpcpy_avx2) redirected to 0x4842300 (stpcpy)
-==64200== Invalid read of size 8
-==64200==    at 0x10A811: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x10A983: signal_handler (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x487041F: ??? (in /usr/lib/x86_64-linux-gnu/libpthread-2.31.so)
-==64200==    by 0x486F4FE: accept (accept.c:26)
-==64200==    by 0x10B405: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Address 0x4acfe20 is 64 bytes inside a block of size 72 free'd
-==64200==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10A80C: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x10A983: signal_handler (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x487041F: ??? (in /usr/lib/x86_64-linux-gnu/libpthread-2.31.so)
-==64200==    by 0x486F4FE: accept (accept.c:26)
-==64200==    by 0x10B405: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Block was alloc'd at
-==64200==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10B46E: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200== 
---64200-- Discarding syms at 0x56785e0-0x5689055 in /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (have_dinfo 1)
-==64200== 
-==64200== HEAP SUMMARY:
-==64200==     in use at exit: 0 bytes in 0 blocks
-==64200==   total heap usage: 211 allocs, 211 frees, 400,267 bytes allocated
-==64200== 
-==64200== All heap blocks were freed -- no leaks are possible
-==64200== 
-==64200== ERROR SUMMARY: 17 errors from 2 contexts (suppressed: 0 from 0)
-==64200== 
-==64200== 1 errors in context 1 of 2:
-==64200== Invalid read of size 8
-==64200==    at 0x10A811: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x10A983: signal_handler (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x487041F: ??? (in /usr/lib/x86_64-linux-gnu/libpthread-2.31.so)
-==64200==    by 0x486F4FE: accept (accept.c:26)
-==64200==    by 0x10B405: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Address 0x4acfe20 is 64 bytes inside a block of size 72 free'd
-==64200==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10A80C: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x10A983: signal_handler (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==    by 0x487041F: ??? (in /usr/lib/x86_64-linux-gnu/libpthread-2.31.so)
-==64200==    by 0x486F4FE: accept (accept.c:26)
-==64200==    by 0x10B405: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Block was alloc'd at
-==64200==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10B46E: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200== 
-==64200== 
-==64200== 16 errors in context 2 of 2:
-==64200== Invalid read of size 8
-==64200==    at 0x10B797: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Address 0x4a7a150 is 64 bytes inside a block of size 72 free'd
-==64200==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10B792: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200==  Block was alloc'd at
-==64200==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==64200==    by 0x10B46E: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
-==64200== 
-==64200== ERROR SUMMARY: 17 errors from 2 contexts (suppressed: 0 from 0)
+==77001== Memcheck, a memory error detector
+==77001== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==77001== Using Valgrind-3.15.0-608cb11914-20190413 and LibVEX; rerun with -h for copyright info
+==77001== Command: ./aesdsocket
+==77001== Parent PID: 77000
+==77001== 
+--77001-- 
+--77001-- Valgrind options:
+--77001--    --error-exitcode=1
+--77001--    --leak-check=full
+--77001--    --show-leak-kinds=all
+--77001--    --track-origins=yes
+--77001--    --errors-for-leak-kinds=definite
+--77001--    --verbose
+--77001--    --log-file=valgrind-out.txt
+--77001-- Contents of /proc/version:
+--77001--   Linux version 5.15.0-97-generic (buildd@lcy02-amd64-102) (gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0, GNU ld (GNU Binutils for Ubuntu) 2.34) #107~20.04.1-Ubuntu SMP Fri Feb 9 14:20:11 UTC 2024
+--77001-- 
+--77001-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-rdrand
+--77001-- Page sizes: currently 4096, max supported 4096
+--77001-- Valgrind library directory: /usr/lib/x86_64-linux-gnu/valgrind
+--77001-- Reading syms from /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-2.31.so
+--77001--   Considering /usr/lib/debug/.build-id/7a/e2aaae1a0e5b262df913ee0885582d2e327982.debug ..
+--77001--   .. build-id is valid
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux
+--77001--    object doesn't have a symbol table
+--77001--    object doesn't have a dynamic symbol table
+--77001-- Scheduler: using generic scheduler lock implementation.
+--77001-- Reading suppressions file: /usr/lib/x86_64-linux-gnu/valgrind/default.supp
+==77001== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-77001-by-akash-on-???
+==77001== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-77001-by-akash-on-???
+==77001== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-77001-by-akash-on-???
+==77001== 
+==77001== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==77001== don't want to do, unless you know exactly what you're doing,
+==77001== or are doing some strange experiment):
+==77001==   /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=77001 ...command...
+==77001== 
+==77001== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==77001==   /path/to/gdb ./aesdsocket
+==77001== and then give GDB the following command
+==77001==   target remote | /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=77001
+==77001== --pid is optional if only one valgrind process is running
+==77001== 
+--77001-- REDIR: 0x4022e20 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c9ce2 (???)
+--77001-- REDIR: 0x4022bf0 (ld-linux-x86-64.so.2:index) redirected to 0x580c9cfc (???)
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_core-amd64-linux.so
+--77001--    object doesn't have a symbol table
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so
+--77001--    object doesn't have a symbol table
+==77001== WARNING: new redirection conflicts with existing -- ignoring it
+--77001--     old: 0x04022e20 (strlen              ) R-> (0000.0) 0x580c9ce2 ???
+--77001--     new: 0x04022e20 (strlen              ) R-> (2007.0) 0x0483f060 strlen
+--77001-- REDIR: 0x401f600 (ld-linux-x86-64.so.2:strcmp) redirected to 0x483ffd0 (strcmp)
+--77001-- REDIR: 0x4023380 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4843a20 (mempcpy)
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+--77001--   Considering /usr/lib/debug/.build-id/0c/044ba611aeeeaebb8374e660061f341ebc0bac.debug ..
+--77001--   .. build-id is valid
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/libc-2.31.so
+--77001--   Considering /usr/lib/debug/.build-id/ee/be5d5f4b608b8a53ec446b63981bba373ca0ca.debug ..
+--77001--   .. build-id is valid
+--77001-- REDIR: 0x491f480 (libc.so.6:memmove) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e780 (libc.so.6:strncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f7b0 (libc.so.6:strcasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e0a0 (libc.so.6:strcat) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e7e0 (libc.so.6:rindex) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x4920c50 (libc.so.6:rawmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x493bce0 (libc.so.6:wmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x493b820 (libc.so.6:wcscmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f5e0 (libc.so.6:mempcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f410 (libc.so.6:bcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e710 (libc.so.6:strncmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e150 (libc.so.6:strcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f540 (libc.so.6:memset) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x493b7e0 (libc.so.6:wcschr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e670 (libc.so.6:strnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e230 (libc.so.6:strcspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f800 (libc.so.6:strncasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e1d0 (libc.so.6:strcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f950 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x493cf50 (libc.so.6:wcsnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x493b860 (libc.so.6:wcscpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e820 (libc.so.6:strpbrk) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e100 (libc.so.6:index) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491e630 (libc.so.6:strlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x4927bb0 (libc.so.6:memrchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f850 (libc.so.6:strcasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f3d0 (libc.so.6:memchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x493b930 (libc.so.6:wcslen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491eae0 (libc.so.6:strspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f750 (libc.so.6:stpncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f6f0 (libc.so.6:stpcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x4920c90 (libc.so.6:strchrnul) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x491f8a0 (libc.so.6:strncasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--77001-- REDIR: 0x4a07730 (libc.so.6:__strrchr_avx2) redirected to 0x483ea10 (rindex)
+--77001-- REDIR: 0x4a0ad90 (libc.so.6:__memset_avx2_unaligned_erms) redirected to 0x48428e0 (memset)
+--77001-- REDIR: 0x49190e0 (libc.so.6:malloc) redirected to 0x483b780 (malloc)
+--77001-- REDIR: 0x491ab10 (libc.so.6:calloc) redirected to 0x483dce0 (calloc)
+--77001-- REDIR: 0x4a07540 (libc.so.6:__strchrnul_avx2) redirected to 0x4843540 (strchrnul)
+--77001-- REDIR: 0x4a07900 (libc.so.6:__strlen_avx2) redirected to 0x483ef40 (strlen)
+--77001-- REDIR: 0x49196d0 (libc.so.6:free) redirected to 0x483c9d0 (free)
+--77001-- REDIR: 0x4a0a910 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x48429f0 (memmove)
+--77001-- REDIR: 0x491efa0 (libc.so.6:__GI_strstr) redirected to 0x4843ca0 (__strstr_sse2)
+--77001-- REDIR: 0x4a03ef0 (libc.so.6:__memcmp_avx2_movbe) redirected to 0x48421e0 (bcmp)
+--77001-- REDIR: 0x4a02df0 (libc.so.6:__strcmp_avx2) redirected to 0x483fed0 (strcmp)
+--77001-- REDIR: 0x4919e80 (libc.so.6:realloc) redirected to 0x483df30 (realloc)
+--77001-- REDIR: 0x4a08e40 (libc.so.6:__strcpy_avx2) redirected to 0x483f090 (strcpy)
+--77001-- REDIR: 0x4a0a8f0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x4843660 (mempcpy)
+--77001-- REDIR: 0x4a03760 (libc.so.6:__memchr_avx2) redirected to 0x4840050 (memchr)
+--77001-- Reading syms from /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+--77001--    object doesn't have a symbol table
+==77001== Invalid read of size 8
+==77001==    at 0x10B795: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Address 0x4a7a150 is 64 bytes inside a block of size 72 free'd
+==77001==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10B790: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Block was alloc'd at
+==77001==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10B46C: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001== 
+--77001-- REDIR: 0x4a09b30 (libc.so.6:__stpcpy_avx2) redirected to 0x4842300 (stpcpy)
+==77001== Invalid read of size 8
+==77001==    at 0x10A811: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==    by 0x10B7C3: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Address 0x4acfe80 is 64 bytes inside a block of size 72 free'd
+==77001==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10A80C: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==    by 0x10B7C3: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Block was alloc'd at
+==77001==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10B46C: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001== 
+--77001-- Discarding syms at 0x56785e0-0x5689055 in /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (have_dinfo 1)
+==77001== 
+==77001== HEAP SUMMARY:
+==77001==     in use at exit: 0 bytes in 0 blocks
+==77001==   total heap usage: 214 allocs, 214 frees, 409,177 bytes allocated
+==77001== 
+==77001== All heap blocks were freed -- no leaks are possible
+==77001== 
+==77001== ERROR SUMMARY: 17 errors from 2 contexts (suppressed: 0 from 0)
+==77001== 
+==77001== 1 errors in context 1 of 2:
+==77001== Invalid read of size 8
+==77001==    at 0x10A811: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==    by 0x10B7C3: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Address 0x4acfe80 is 64 bytes inside a block of size 72 free'd
+==77001==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10A80C: cleanup_and_exit (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==    by 0x10B7C3: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Block was alloc'd at
+==77001==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10B46C: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001== 
+==77001== 
+==77001== 16 errors in context 2 of 2:
+==77001== Invalid read of size 8
+==77001==    at 0x10B795: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Address 0x4a7a150 is 64 bytes inside a block of size 72 free'd
+==77001==    at 0x483CA3F: free (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10B790: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001==  Block was alloc'd at
+==77001==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==77001==    by 0x10B46C: main (in /home/akash/ass3/assignments-3-and-later-akka2103/server/aesdsocket)
+==77001== 
+==77001== ERROR SUMMARY: 17 errors from 2 contexts (suppressed: 0 from 0)

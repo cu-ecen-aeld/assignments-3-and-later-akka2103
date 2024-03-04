@@ -27,6 +27,8 @@ pthread_mutex_t timer_mutex;
 pthread_t timer_thread;
 time_t last_timestamp;
 
+bool signal_exit= false;
+
 struct thread_data_s
 {
     pthread_t id;
@@ -120,7 +122,8 @@ void cleanup_and_exit(int status)
 void signal_handler(int signo)
 {
     syslog(LOG_USER, "Caught signal, exiting");
-    cleanup_and_exit(EXIT_SUCCESS);
+    //cleanup_and_exit(EXIT_SUCCESS);
+    signal_exit=true;
 }
 
 void setup_signal_handler()
@@ -147,7 +150,7 @@ void *thread_function(void *arg)
 void handle_client_connection(int client_fd)
 {
     FILE *fp = fopen(LOG_FILE_LOC, "a+");
-    bool flag = 0;
+    bool flag = false;
     int index = 0;
     char *bptr = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
 
@@ -161,7 +164,7 @@ void handle_client_connection(int client_fd)
 
     while (1)
     {
-        ssize_t bytes_recv = recv(client_fd, bptr + index, sizeof(char) * (MAX_BUFFER_SIZE), 0);
+        ssize_t bytes_recv = recv(client_fd, bptr + index, sizeof(char) * (MAX_BUFFER_SIZE - index), 0);
         if (bytes_recv <= 0)
         {
             break;
@@ -169,7 +172,7 @@ void handle_client_connection(int client_fd)
         index += bytes_recv;
         if (index >= MAX_BUFFER_SIZE)
         {
-            char *newBptr = (char *)realloc(bptr, sizeof(char) * (index + MAX_BUFFER_SIZE + index));
+            char *newBptr = (char *)realloc(bptr, sizeof(char) * (index + MAX_BUFFER_SIZE));
 
             if (newBptr != NULL)
             {
@@ -187,15 +190,13 @@ void handle_client_connection(int client_fd)
 
         if (memchr(bptr, '\n', index) != NULL)
         {
-            flag = 1;
+            flag = true;
             break;
         }
     }
 
-    if (flag == 1)
+    if (flag)
     {
-        flag = 0;
-
         // Lock the mutex before writing to the file
         if (pthread_mutex_lock(&aesdsock_mutex) != 0)
         {
@@ -453,7 +454,7 @@ int main(int argc, char *argv[])
     // Setup the timer thread
     setup_timer();
 
-    while (1)
+    while (!signal_exit)
     {
         struct sockaddr_in client_addr;
         socklen_t client_addr_size = sizeof(client_addr);
