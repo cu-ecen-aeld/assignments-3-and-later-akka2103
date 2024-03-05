@@ -1,33 +1,17 @@
-# Makefile for aesdsocket program
 
-# Compiler and compilation flags
-CC ?= gcc
-CFLAGS ?= -Wall -Werror
+CC ?= $(CROSS_COMPILE)gcc
 
-# Cross compilation support
-CROSS_COMPILE ?=
+CFLAGS ?=-Wall -Werror -g
 
-# Target executable
-TARGET = aesdsocket
+# Linker Flags
+LDFLAGS ?= -pthread -lrt
 
-# Source files
-SRCS = aesdsocket.c
+all: aesdsocket
 
-# Object files
-OBJS = $(SRCS:.c=.o)
+default: all
 
-# Default target
-all: $(TARGET)
+aesdsocket:
+	$(CC) $(CFLAGS) $(LDFLAGS) aesdsocket.c -o aesdsocket
 
-# Rule to build the executable
-$(TARGET): $(OBJS)
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o $@ $^
-
-# Rule to build object files
-%.o: %.c
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c -o $@ $<
-
-# Clean up
 clean:
-	rm -f $(OBJS) $(TARGET)
-
+	rm -f *.o aesdsocket
