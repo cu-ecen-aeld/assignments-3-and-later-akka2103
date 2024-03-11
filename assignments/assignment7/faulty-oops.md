@@ -1,3 +1,6 @@
+# OOPS COMPLETE LOGS
+
+```
 Unable to handle kernel NULL pointer dereference at virtual address 0000000000000000
 Mem abort info:
   ESR = 0x96000045
@@ -40,3 +43,28 @@ Call trace:
  el0t_64_sync+0x1a0/0x1a4
 Code: d2800001 d2800000 d503233f d50323bf (b900003f) 
 ---[ end trace 2ee9b1b3b2ca233c ]---
+```
+
+# OBJDMP LOGS
+
+```
+0000000000000000 <faulty_write>:
+   0:   d503245f bti    c
+   4:   d2800001 mov    x1, #0x0                   // #0
+   8:   d2800000 mov    x0, #0x0                   // #0
+   c:   d503233f paciasp
+  10:   d50323bf autiasp
+  14:   b900003f str    wzr, [x1]
+  18:   d65f03c0 ret
+  1c:   d503201f nop
+```
+
+# DESCRITPION
+
+    * The problematic section in the write program is the faulty_write function.
+    * The program counter indicates an offset of 0x14 bytes from the beginning of the function, and the total function size is 0x20.
+    * The crash occurred due to a NULL pointer dereference at this specific location.
+    * Analyzing the OBJDUMP, it is evident that the crash is caused by storing the value at address 0x0 into x1 using the str instruction.
+    * The NULL pointer dereference leads to a kernel crash.
+    * The issue stems from attempting to dereference a pointer with a value of 0x0.
+    * The offset +0x14 and the total function size of 0x20 pinpoint the exact location of the crash in the faulty_write function.
