@@ -128,6 +128,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     ssize_t write_len = 0;
     struct aesd_dev *dev = NULL;
     char *temp_buffer = NULL;
+    char* newline_position;
 
     // Check if file pointer and buffer are valid
     if ((filp==NULL) || (buf==NULL))
@@ -173,15 +174,9 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     }
 
     // Check for a newline character in the input buffer
-    char *newline_position = memchr(temp_buffer, '\n', count);
-    if (newline_position)
-    {
-        write_len = 1 + (newline_position - temp_buffer);
-    }
-    else
-    {
-        write_len = count;
-    }
+    newline_position = memchr(temp_buffer, '\n', count);
+    write_len = newline_position ? 1 + (newline_position - temp_buffer) : count;
+    
 
     // Reallocate memory for the working entry to accommodate new content
     dev->entry.buffptr = krealloc(dev->entry.buffptr,

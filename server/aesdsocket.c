@@ -16,7 +16,16 @@
 #include <time.h>
 #include <sys/time.h>
 
+
+#define USE_AESD_CHAR_DEVICE 1
+
+#ifdef USE_AESD_CHAR_DEVICE
+#define  LOG_FILE_LOC "/dev/aesdchar"
+#else
 #define LOG_FILE_LOC "/var/tmp/aesdsocketdata"
+#endif
+
+
 #define PORT "9000"
 #define MAX_BUFFER_SIZE 1024
 #define TIMESTAMP_INTERVAL 10 // seconds
@@ -28,6 +37,8 @@ pthread_t timer_thread;
 time_t last_timestamp;
 
 bool signal_exit= false;
+
+
 
 struct thread_data_s
 {
@@ -57,7 +68,9 @@ void cleanup_and_exit(int status)
     syslog(LOG_INFO, "Closing aesdsocket application");
     closelog();
     close(sockfd);
+    #if !(USE_AESD_CHAR_DEVICE)	
     remove(LOG_FILE_LOC);
+    #endif
 
     // Lock the mutex before deallocating memory
     if (pthread_mutex_lock(&thread_list_mutex) != 0)
@@ -451,10 +464,13 @@ int main(int argc, char *argv[])
     }
 
     syslog(LOG_INFO, "Listening on port %s", PORT);
+    
+    #if !(USE_AESD_CHAR_DEVICE)
 
     // Setup the timer thread
     setup_timer();
 
+    #endif
     while (!signal_exit)
     {
         struct sockaddr_in client_addr;
