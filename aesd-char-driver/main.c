@@ -122,85 +122,114 @@ out:
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
-                   loff_t *f_pos)
+                loff_t *f_pos)
 {
-    ssize_t retval = -EINVAL;
+    ssize_t retval = 0;
+    ssize_t write_len = 0;
     struct aesd_dev *dev = NULL;
     char *temp_buffer = NULL;
-    size_t write_len = 0;
-    char *newline_position = NULL;
-    struct aesd_buffer_entry new_entry;
 
-    // Validate file pointer and buffer
-    if (!filp || !buf)
-        goto out;
-
-    // Retrieve device pointer from file's private data
-    dev = filp->private_data;
-    if (!dev) 
+    // Check if file pointer and buffer are valid
+    if ((filp==NULL) || (buf==NULL))
     {
-        PDEBUG("Invalid device data");
-        retval = -EPERM;
+        retval = -EINVAL; // Invalid argument
         goto out;
     }
+    
+    // Retrieve device pointer from file's private data
+    dev = filp->private_data;
+    if (!dev)
+    {
+        // Invalid device data
+        retval = -EPERM;
+        goto out_free_temp_buffer;
+    }
 
-    // Allocate temporary buffer
+    // Allocate memory to store the temporary buffer
     temp_buffer = kmalloc(count, GFP_KERNEL);
-    if (!temp_buffer) {
-        PDEBUG("Memory allocation for temporary buffer failed");
+    if (!temp_buffer)
+    {
+        // Unable to allocate memory
         retval = -ENOMEM;
         goto out;
     }
 
     // Copy buffer from user space into kernel buffer
-    if (copy_from_user(temp_buffer, buf, count)) {
-        PDEBUG("Failed to copy buffer from user space");
+    if (copy_from_user(temp_buffer, buf, count))
+    {
+        // Unable to copy buffer from user space
         retval = -EFAULT;
         goto out_free_temp_buffer;
     }
 
-    // Check for a newline character in the input buffer
-    newline_position = memchr(temp_buffer, '\n', count);
-    write_len = newline_position ? 1 + (newline_position - temp_buffer) : count;
+    
 
-    // Allocate memory for the new entry
-    new_entry.buffptr = NULL; // Initialize to NULL initially
-    new_entry.buffptr = krealloc(new_entry.buffptr, write_len, GFP_KERNEL);
-    if (!new_entry.buffptr) {
-        PDEBUG("Memory reallocation for new entry failed");
-        retval = -ENOMEM;
+    // Lock the mutex before writing to the circular buffer
+    if (mutex_lock_interruptible(&dev->mutex_lock))
+    {
+        // Unable to lock mutex
+        retval = -ERESTARTSYS;
         goto out_free_temp_buffer;
     }
 
-    // Copy the write buffer into the new entry
-    memcpy((void *)new_entry.buffptr, temp_buffer, write_len);
-    new_entry.size = write_len;
-
-    // Lock the mutex before modifying the circular buffer
-    if (mutex_lock_interruptible(&dev->mutex_lock)) {
-        PDEBUG("Failed to acquire lock");
-        retval = -ERESTARTSYS;
-        goto out_free_new_entry;
+    // Check for a newline character in the input buffer
+    char *newline_position = memchr(temp_buffer, '\n', count);
+    if (newline_position)
+    {
+        write_len = 1 + (newline_position - temp_buffer);
+    }
+    else
+    {
+        write_len = count;
     }
 
-    // Add the new entry to the circular buffer
-    aesd_circular_buffer_add_entry(&dev->buf, &new_entry);
+    // Reallocate memory for the working entry to accommodate new content
+    dev->entry.buffptr = krealloc(dev->entry.buffptr,
+                                           dev->entry.size + write_len,
+                                           GFP_KERNEL);
+    if (!dev->entry.buffptr)
+    {
+        // Unable to reallocate memory for new write command addition
+        retval = -ENOMEM;
+        goto out_unlock;
+    }
+
+    // Copy the most recent write buffer into the working entry
+    memcpy(dev->entry.buffptr + dev->entry.size, temp_buffer, write_len);
+
+    dev->entry.size += write_len;
+
+    // If a newline character is found, add the entry to the circular buffer
+    if (newline_position)
+    {
+        const char *ret_buf = NULL;
+
+        // Add the entry to the circular buffer
+        ret_buf = aesd_circular_buffer_add_entry(&dev->buf, &dev->entry);
+        if (ret_buf)
+        {
+            // If more than 10 writes, free the oldest buffer
+            kfree(ret_buf);
+        }
+
+        // Reset working entry
+        dev->entry.size = 0;
+        dev->entry.buffptr = NULL;
+    }
 
     // Unlock the mutex
+out_unlock:
     mutex_unlock(&dev->mutex_lock);
-
-    retval = count;
-
-out_free_new_entry:
-    kfree(new_entry.buffptr);
 
 out_free_temp_buffer:
     kfree(temp_buffer);
 
 out:
+    // Return the number of bytes written
+    retval = count;
+
     return retval;
 }
-
 
 
 
