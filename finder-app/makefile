@@ -17,6 +17,9 @@ $(OUTPUT): writer.o
 writer.o: writer.c
 	$(CC) $(CF) -c writer.c
 
+# Target to build the executable and object file
+all: $(OUTPUT)
+
 clean:
 	rm -f *.o $(OUTPUT)
 
