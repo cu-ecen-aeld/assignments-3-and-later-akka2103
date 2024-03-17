@@ -29,6 +29,7 @@
 #define PORT "9000"
 #define MAX_BUFFER_SIZE 1024
 #define TIMESTAMP_INTERVAL 10 // seconds
+#define CHUNK_SIZE 4096
 
 pthread_mutex_t aesdsock_mutex;
 pthread_mutex_t thread_list_mutex;
@@ -233,12 +234,21 @@ void handle_client_connection(int client_fd)
             return;
         }
 
-        fp = fopen(LOG_FILE_LOC, "rb");
+       /* fp = fopen(LOG_FILE_LOC, "rb");
         if (fp != NULL)
         {
-            fseek(fp, 0, SEEK_END);
-            long file_size = ftell(fp);
-            fseek(fp, 0, SEEK_SET);
+            long file_size = 0;
+            //fseek(fp, 0, SEEK_END);
+            //long file_size = ftell(fp);
+            //fseek(fp, 0, SEEK_SET);
+	    // Read each character until end of file to determine file size
+            while (fgetc(fp) != EOF) 
+            {
+                 file_size++;
+            } 
+
+            // Reset file position indicator to the beginning of the file
+            rewind(fp);
 
             char *rptr = (char *)malloc(sizeof(char) * (file_size + 1));
 
@@ -256,8 +266,38 @@ void handle_client_connection(int client_fd)
 
                 // Free allocated memory
                 free(rptr);
-            }
+            }*/
+            
+            int fd = open(LOG_FILE_LOC, O_RDONLY);
+	if (fd != -1) 
+	{
+    	char buffer[CHUNK_SIZE];
+    	ssize_t bytes_read;
+
+    	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) 
+    	{
+        // Send the chunk of data to the client
+        if (send(client_fd, buffer, bytes_read, 0) == -1) 
+        {
+            syslog(LOG_ERR, "Error sending data to client: %m");
+            break; // Exit loop on send error
         }
+    	}
+
+    	if (bytes_read == -1) 
+    	{
+        	// Handle read error
+        	syslog(LOG_ERR, "Error reading file: %m");
+    	}
+
+    	// Close the file descriptor
+    	close(fd);
+	}
+	else {
+    // Handle file open error
+    syslog(LOG_ERR, "Error opening file: %m");
+	}
+        //}
     }
 
     close(client_fd);
