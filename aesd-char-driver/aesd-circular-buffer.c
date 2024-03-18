@@ -7,7 +7,7 @@
  * @copyright Copyright (c) 2020
  */
 
-#ifdef KERNEL
+#ifdef __KERNEL__
 #include <linux/string.h>
 #else
 #include <string.h>
@@ -28,6 +28,9 @@
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
                                                                           size_t char_offset, size_t *entry_offset_byte_rtn)
 {
+    // Initialize offset to 0
+    size_t offset = 0;
+    
     // Initialize index to the current out offset
     uint8_t index = buffer->out_offs;
     
@@ -41,8 +44,6 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
         return &buffer->entry[buffer->out_offs];
     }
 
-    // Initialize offset to 0
-    size_t offset = 0;
 
     // Loop through entries to find the one at the specified char_offset
     while (1)
@@ -80,14 +81,19 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
  * Any necessary locking must be handled by the caller
  * Any memory referenced in @param add_entry must be allocated by and/or must have a lifetime managed by the caller.
  */
-void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
+const char *aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
+    const char *ret_buf = NULL;
     // Check for NULL pointers
     if (buffer == NULL || add_entry == NULL)
     {
-        return;
+        return ret_buf;
     }
-
+    
+    if(buffer->full)
+    {
+        ret_buf = buffer->entry[buffer->out_offs].buffptr;
+    }
     // Add the new entry to the circular buffer
     buffer->entry[buffer->in_offs] = *add_entry;
     buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
@@ -103,6 +109,7 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
         // If in offset equals out offset, set full flag
         buffer->full = true;
     }
+    return ret_buf;
 }
 
 /**
