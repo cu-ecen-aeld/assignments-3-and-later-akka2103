@@ -23,6 +23,7 @@
 #include <linux/fs.h> // file_operations
 #include <linux/slab.h>
 #include "aesdchar.h"
+#include "aesd_ioctl.h" // AESDCHAR_IOCSEEKTO
 
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
@@ -190,7 +191,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     }
 
     // Copy the most recent write buffer into the working entry
-    memcpy(dev->entry.buffptr + dev->entry.size, temp_buffer, write_len);
+    memcpy((void *)(dev->entry.buffptr + dev->entry.size), temp_buffer, write_len);
 
     dev->entry.size += write_len;
 
@@ -227,13 +228,126 @@ out:
 }
 
 
+/**
+ * @brief Custom llseek implementation to support seek operations
+ *
+ * @param filp     File pointer
+ * @param off      Offset value
+ * @param whence   Positional type (SEEK_SET, SEEK_CUR, SEEK_END)
+ * @return New file position on success, or appropriate error code
+ */
+loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
+{
+    struct aesd_dev *dev = filp->private_data;
+    loff_t new_pos = -EINVAL;
+    size_t total_size = 0;
+    struct aesd_buffer_entry *entry;
+    uint8_t index;
 
+    if (mutex_lock_interruptible(&dev->mutex_lock))
+        return -ERESTARTSYS;
+
+    switch (whence)
+    {
+    case SEEK_SET:
+        new_pos = off;
+        break;
+    case SEEK_CUR:
+        new_pos = filp->f_pos + off;
+        break;
+    case SEEK_END:
+        // Calculate the total size of all entries in the circular buffer
+        
+        AESD_CIRCULAR_BUFFER_FOREACH(entry, &dev->buf, index)
+        {
+            total_size += entry->size;
+        }
+        new_pos = total_size + off;
+        break;
+    default:
+        new_pos = -EINVAL;
+    }
+
+    if (new_pos < 0 || new_pos > total_size)
+    {
+        // Seek position is out of bounds
+        new_pos = -EINVAL;
+    }
+    else
+    {
+        // Update the file position
+        filp->f_pos = new_pos;
+    }
+
+    mutex_unlock(&dev->mutex_lock);
+    return new_pos;
+}
+
+/**
+ * @brief ioctl command handler for AESDCHAR_IOCSEEKTO
+ *
+ * @param filp     File pointer
+ * @param cmd      ioctl command (AESDCHAR_IOCSEEKTO)
+ * @param arg      User-provided buffer containing command index and offset
+ * @return 0 on success, or appropriate error code
+ */
+long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    struct aesd_dev *dev = filp->private_data;
+    int retval = 0;
+    struct aesd_seekto seekto;
+    uint8_t i;
+    size_t new_pos = 0;
+    uint8_t index = dev->buf.out_offs;
+    struct aesd_buffer_entry *entry;
+
+    if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC)
+        return -ENOTTY;
+
+    if (_IOC_NR(cmd) != AESDCHAR_IOCSEEKTO)
+        return -ENOIOCTLCMD;
+
+    if (mutex_lock_interruptible(&dev->mutex_lock))
+        return -ERESTARTSYS;
+
+    if (copy_from_user(&seekto, (void *)arg, sizeof(seekto)))
+    {
+        retval = -EFAULT;
+        goto out_unlock;
+    }
+
+    // Validate the command index and offset
+    if (seekto.write_cmd >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED ||
+        seekto.write_cmd_offset >= dev->buf.entry[seekto.write_cmd].size)
+    {
+        retval = -EINVAL;
+        goto out_unlock;
+    }
+
+    // Calculate the new file position
+    for (i = 0; i < seekto.write_cmd; i++)
+    {
+        entry = &dev->buf.entry[index];
+        new_pos += entry->size;
+        index = (index + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+    }
+    new_pos += seekto.write_cmd_offset;
+
+    // Update the file position
+    filp->f_pos = new_pos;
+
+out_unlock:
+    mutex_unlock(&dev->mutex_lock);
+    return retval;
+}
 struct file_operations aesd_fops = {
     .owner =    THIS_MODULE,
     .read =     aesd_read,
     .write =    aesd_write,
     .open =     aesd_open,
     .release =  aesd_release,
+    .llseek =   aesd_llseek,
+    .unlocked_ioctl = aesd_ioctl,
 };
 
 static int aesd_setup_cdev(struct aesd_dev *dev)

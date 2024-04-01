@@ -15,6 +15,8 @@
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
+#include "../aesd-char-driver/aesd_ioctl.h"
 
 
 #define USE_AESD_CHAR_DEVICE 1
@@ -175,6 +177,17 @@ void handle_client_connection(int client_fd)
         close(client_fd);
         return;
     }
+    
+    // Get the file descriptor associated with the FILE* pointer
+    int device_fd = fileno(fp);
+    if (device_fd == -1)
+    {
+        syslog(LOG_ERR, "Error obtaining file descriptor from file stream");
+        fclose(fp);
+        close(client_fd);
+        return;
+    }
+
 
     while (1)
     {
@@ -212,6 +225,28 @@ void handle_client_connection(int client_fd)
 
     if (flag)
     {
+         // Check if the received command is AESDCHAR_IOCSEEKTO:X,Y
+    if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
+    {
+        unsigned int x, y;
+        if (sscanf(bptr + 19, "%u,%u", &x, &y) == 2)
+        {
+            // Perform ioctl operation with X and Y values
+            if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, (unsigned long)((uint64_t)x << 32 | y)) == -1)
+            {
+                syslog(LOG_ERR, "Error performing ioctl operation: %m");
+                free(bptr);
+                fclose(fp);
+                close(client_fd);
+                return;
+            }
+        }
+        else
+        {
+            syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
+        }
+    }
+
         // Lock the mutex before writing to the file
         if (pthread_mutex_lock(&aesdsock_mutex) != 0)
         {
@@ -234,72 +269,39 @@ void handle_client_connection(int client_fd)
             return;
         }
 
-       /* fp = fopen(LOG_FILE_LOC, "rb");
-        if (fp != NULL)
+        // Read from aesdchar device and send data back over socket
+        int fd = open(LOG_FILE_LOC, O_RDONLY);
+        if (fd != -1)
         {
-            long file_size = 0;
-            //fseek(fp, 0, SEEK_END);
-            //long file_size = ftell(fp);
-            //fseek(fp, 0, SEEK_SET);
-	    // Read each character until end of file to determine file size
-            while (fgetc(fp) != EOF) 
+            char buffer[CHUNK_SIZE];
+            ssize_t bytes_read;
+
+            while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
             {
-                 file_size++;
-            } 
-
-            // Reset file position indicator to the beginning of the file
-            rewind(fp);
-
-            char *rptr = (char *)malloc(sizeof(char) * (file_size + 1));
-
-            if (rptr != NULL)
-            {
-                size_t bytes_read = fread(rptr, 1, file_size, fp);
-
-                fclose(fp);
-
-                // Send the content to the client
-                if (send(client_fd, rptr, bytes_read, 0) == -1)
+                // Send the chunk of data to the client
+                if (send(client_fd, buffer, bytes_read, 0) == -1)
                 {
                     syslog(LOG_ERR, "Error sending data to client: %m");
+                    break; // Exit loop on send error
                 }
+            }
 
-                // Free allocated memory
-                free(rptr);
-            }*/
-            
-            int fd = open(LOG_FILE_LOC, O_RDONLY);
-	if (fd != -1) 
-	{
-    	char buffer[CHUNK_SIZE];
-    	ssize_t bytes_read;
+            if (bytes_read == -1)
+            {
+                // Handle read error
+                syslog(LOG_ERR, "Error reading file: %m");
+            }
 
-    	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) 
-    	{
-        // Send the chunk of data to the client
-        if (send(client_fd, buffer, bytes_read, 0) == -1) 
-        {
-            syslog(LOG_ERR, "Error sending data to client: %m");
-            break; // Exit loop on send error
+            // Close the file descriptor
+            close(fd);
         }
-    	}
-
-    	if (bytes_read == -1) 
-    	{
-        	// Handle read error
-        	syslog(LOG_ERR, "Error reading file: %m");
-    	}
-
-    	// Close the file descriptor
-    	close(fd);
-	}
-	else {
-    // Handle file open error
-    syslog(LOG_ERR, "Error opening file: %m");
-	}
-        //}
+        else
+        {
+            // Handle file open error
+            syslog(LOG_ERR, "Error opening file: %m");
+        }
     }
-
+    fclose(fp);
     close(client_fd);
 }
 
