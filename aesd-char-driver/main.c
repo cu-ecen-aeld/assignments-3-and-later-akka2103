@@ -228,6 +228,7 @@ out:
 }
 
 
+
 /**
  * @brief Custom llseek implementation to support seek operations
  *
@@ -239,44 +240,53 @@ out:
 loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 {
     struct aesd_dev *dev = filp->private_data;
-    loff_t new_pos = -EINVAL;
+    loff_t new_pos = 0;
     size_t total_size = 0;
     struct aesd_buffer_entry *entry;
     uint8_t index;
 
     if (mutex_lock_interruptible(&dev->mutex_lock))
+    {
+    	printk("mutex lock unsuccess\n");
         return -ERESTARTSYS;
+    }
 
-    switch (whence)
+    /*switch (whence)
     {
     case SEEK_SET:
+    	printk("seek set, %u\n", new_pos);
         new_pos = off;
         break;
     case SEEK_CUR:
+    	printk("seek cur %u\n", new_pos);
         new_pos = filp->f_pos + off;
         break;
     case SEEK_END:
-        // Calculate the total size of all entries in the circular buffer
-        
+        // Calculate the total size of all entries in the circular buffer*/
+        //printk("seek end %u\n", new_pos);
         AESD_CIRCULAR_BUFFER_FOREACH(entry, &dev->buf, index)
         {
             total_size += entry->size;
         }
-        new_pos = total_size + off;
-        break;
-    default:
+        //new_pos = total_size + off;
+        new_pos = fixed_size_llseek(filp, off, whence, total_size);
+        //break;
+    /*default:
+    	printk("default case\n");
         new_pos = -EINVAL;
-    }
+    }*/
 
     if (new_pos < 0 || new_pos > total_size)
     {
         // Seek position is out of bounds
+        printk("out of range pos %u\n", new_pos);
         new_pos = -EINVAL;
     }
     else
     {
         // Update the file position
         filp->f_pos = new_pos;
+        printk("updatted pos %u\n", new_pos);
     }
 
     mutex_unlock(&dev->mutex_lock);
@@ -309,32 +319,44 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
     if (mutex_lock_interruptible(&dev->mutex_lock))
         return -ERESTARTSYS;
-
-    if (copy_from_user(&seekto, (void *)arg, sizeof(seekto)))
+        
+    switch(cmd)
     {
-        retval = -EFAULT;
-        goto out_unlock;
-    }
+	 case AESDCHAR_IOCSEEKTO:
+	 {
+	    if (copy_from_user(&seekto, (void *)arg, sizeof(seekto)))
+	    {
+		retval = -EFAULT;
+		goto out_unlock;
+	    }
 
-    // Validate the command index and offset
-    if (seekto.write_cmd >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED ||
-        seekto.write_cmd_offset >= dev->buf.entry[seekto.write_cmd].size)
-    {
-        retval = -EINVAL;
-        goto out_unlock;
-    }
+	    // Validate the command index and offset
+	    if (seekto.write_cmd >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED ||
+		seekto.write_cmd_offset >= dev->buf.entry[seekto.write_cmd].size)
+	    {
+	    	printk("seek write cmd greater than max\n");
+		retval = -EINVAL;
+		goto out_unlock;
+	    }
 
-    // Calculate the new file position
-    for (i = 0; i < seekto.write_cmd; i++)
-    {
-        entry = &dev->buf.entry[index];
-        new_pos += entry->size;
-        index = (index + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+	    // Calculate the new file position
+	    for (i = 0; i < seekto.write_cmd; i++)
+	    {
+		entry = &dev->buf.entry[index];
+		new_pos += entry->size;
+		index = (index + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+	    }
+	    new_pos += seekto.write_cmd_offset;
+	    printk("new pos updated, %u\n",new_pos);
+	    
+	    // Update the file position
+	    filp->f_pos = new_pos;
+	 }break;
+	 default:
+	 	retval = -ENOTTY;
+	 	goto out_unlock;
     }
-    new_pos += seekto.write_cmd_offset;
-
-    // Update the file position
-    filp->f_pos = new_pos;
+	 
 
 out_unlock:
     mutex_unlock(&dev->mutex_lock);
