@@ -176,7 +176,6 @@ void handle_client_connection(int client_fd)
         syslog(LOG_ERR, "Error opening file for writing: %m");
         free(bptr);
         close(client_fd);
-        close(fd);
         return;
     }
     
@@ -188,7 +187,6 @@ void handle_client_connection(int client_fd)
         fclose(fp);
         free(bptr);
         close(client_fd);
-        close(fd);
         return;
     }
 
@@ -205,7 +203,7 @@ void handle_client_connection(int client_fd)
 	    if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
 	    {
 		struct aesd_seekto seek_tmp;	
-		if (sscanf(bptr, "AESDCHAR_IOCSEEKTO:%d,%d", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
+		if (sscanf(bptr+19, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
 		{
 		    // Perform ioctl operation with X and Y values
 		    if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &seek_tmp) != 0)
@@ -241,7 +239,6 @@ void handle_client_connection(int client_fd)
                 free(bptr);
                 fclose(fp);
                 close(client_fd);
-                close(fd);
                 return;
             }
         }
@@ -262,7 +259,6 @@ void handle_client_connection(int client_fd)
             fclose(fp);
             free(bptr);
             close(client_fd);
-            close(fd);
             return;
         }
 
@@ -277,12 +273,12 @@ void handle_client_connection(int client_fd)
             syslog(LOG_ERR, "Error unlocking aesdsock mutex");
             free(bptr);
             close(client_fd);
-            close(fd);
             return;
         }
         
 
         read_data:
+
         // Read from aesdchar device and send data back over socket
         if (fd != -1)
         {
