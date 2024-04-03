@@ -184,6 +184,7 @@ void handle_client_connection(int client_fd)
     {
         syslog(LOG_ERR, "Error obtaining file descriptor from file stream");
         fclose(fp);
+        free(bptr);
         close(client_fd);
         return;
     }
@@ -204,7 +205,7 @@ void handle_client_connection(int client_fd)
             if (newBptr != NULL)
             {
                 bptr = newBptr;
-                free(newBptr);
+                //free(newBptr);
             }
             else
             {
@@ -225,15 +226,15 @@ void handle_client_connection(int client_fd)
 
     if (flag)
     {
-	    #if (USE_AESD_CHAR_DEVICE == 1)
+    #if (USE_AESD_CHAR_DEVICE == 1)
          // Check if the received command is AESDCHAR_IOCSEEKTO:X,Y
     if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
     {
-	struct aesd_seekto temp_seek;
-        if (sscanf(bptr + 19, "%u,%u", &temp_seek.write_cmd, &temp_seek.write_cmd_offset) == 2)
+        unsigned int x, y;
+        if (sscanf(bptr + 19, "%u,%u", &x, &y) == 2)
         {
             // Perform ioctl operation with X and Y values
-            if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &temp_seek) == -1)
+            if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, (unsigned long)((uint64_t)x << 32 | y)) == -1)
             {
                 syslog(LOG_ERR, "Error performing ioctl operation: %m");
                 free(bptr);
@@ -247,26 +248,25 @@ void handle_client_connection(int client_fd)
             syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
         }
     }
-	    #endif
-
+#endif
         // Lock the mutex before writing to the file
         if (pthread_mutex_lock(&aesdsock_mutex) != 0)
         {
             syslog(LOG_ERR, "Error locking aesdsock mutex");
-            free(bptr);
             fclose(fp);
+            free(bptr);
             close(client_fd);
             return;
         }
 
         fwrite(bptr, index, 1, fp);
         fclose(fp);
-        free(bptr);
 
         // Unlock the mutex after writing to the file
         if (pthread_mutex_unlock(&aesdsock_mutex) != 0)
         {
             syslog(LOG_ERR, "Error unlocking aesdsock mutex");
+            free(bptr);
             close(client_fd);
             return;
         }
@@ -303,7 +303,8 @@ void handle_client_connection(int client_fd)
             syslog(LOG_ERR, "Error opening file: %m");
         }
     }
-    fclose(fp);
+
+    free(bptr); // Free the memory allocated for bptr
     close(client_fd);
 }
 
