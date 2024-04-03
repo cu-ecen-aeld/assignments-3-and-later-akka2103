@@ -169,12 +169,14 @@ void handle_client_connection(int client_fd)
     bool flag = false;
     int index = 0;
     char *bptr = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
+    int fd = open(LOG_FILE_LOC, O_RDONLY);
 
     if (fp == NULL)
     {
         syslog(LOG_ERR, "Error opening file for writing: %m");
         free(bptr);
         close(client_fd);
+        close(fd);
         return;
     }
     
@@ -186,6 +188,7 @@ void handle_client_connection(int client_fd)
         fclose(fp);
         free(bptr);
         close(client_fd);
+        close(fd);
         return;
     }
 
@@ -219,7 +222,7 @@ void handle_client_connection(int client_fd)
 		    syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
 		}
 		
-		goto file_read;
+		goto read_data;
 	    }
 #endif
         index += bytes_recv;
@@ -238,6 +241,7 @@ void handle_client_connection(int client_fd)
                 free(bptr);
                 fclose(fp);
                 close(client_fd);
+                close(fd);
                 return;
             }
         }
@@ -258,6 +262,7 @@ void handle_client_connection(int client_fd)
             fclose(fp);
             free(bptr);
             close(client_fd);
+            close(fd);
             return;
         }
 
@@ -272,13 +277,13 @@ void handle_client_connection(int client_fd)
             syslog(LOG_ERR, "Error unlocking aesdsock mutex");
             free(bptr);
             close(client_fd);
+            close(fd);
             return;
         }
         
 
+        read_data:
         // Read from aesdchar device and send data back over socket
-        int fd = open(LOG_FILE_LOC, O_RDONLY);
-        file_read:
         if (fd != -1)
         {
             char buffer[CHUNK_SIZE];
@@ -313,7 +318,6 @@ void handle_client_connection(int client_fd)
     free(bptr); // Free the memory allocated for bptr
     close(client_fd);
 }
-
 
 void daemonize()
 {
