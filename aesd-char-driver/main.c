@@ -303,60 +303,70 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
  */
 long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
+    printk("AESD_IOCTL START\r\n");
     struct aesd_dev *dev = filp->private_data;
     int retval = 0;
     struct aesd_seekto seekto;
     uint8_t i;
     size_t new_pos = 0;
-    uint8_t index = dev->buf.out_offs;
+    uint8_t index;
     struct aesd_buffer_entry *entry;
 
-    if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC)
+   /*if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC)
         return -ENOTTY;
 
     if (_IOC_NR(cmd) != AESDCHAR_IOCSEEKTO)
         return -ENOIOCTLCMD;
 
-    if (mutex_lock_interruptible(&dev->mutex_lock))
-        return -ERESTARTSYS;
-        
+   */
+	printk("AESD_IOCTL_SWITCH\r\n");
     switch(cmd)
     {
-	 case AESDCHAR_IOCSEEKTO:
-	 {
-	    if (copy_from_user(&seekto, (void *)arg, sizeof(seekto)))
-	    {
-		retval = -EFAULT;
-		goto out_unlock;
-	    }
+        case AESDCHAR_IOCSEEKTO:
+        {
+            if (copy_from_user(&seekto, (void *)arg, sizeof(seekto)))
+            {
+                retval = -EFAULT;
+                goto out_unlock;
+            }
+		if (mutex_lock_interruptible(&dev->mutex_lock))
+        	return -ERESTARTSYS;
+            // Calculate the index of the entry based on the current out_offs
+            index = (dev->buf.out_offs + seekto.write_cmd) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+		
+	    printk("index = %d\r\n",index);
+            // Validate the command index and offset
+            if (seekto.write_cmd > AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED ||
+                seekto.write_cmd_offset >= dev->buf.entry[index].size)
+            {
+                printk("Invalid write command or offset\n");
+                retval = -EINVAL;
+                goto out_unlock;
+            }
+             
+             
+	printk("index after if= %d\r\n",index);
+            // Calculate the new file position
+            new_pos = 0;
+            i = dev->buf.out_offs;
+            while (i != index)
+            {
+                entry = &dev->buf.entry[i];
+                new_pos += entry->size;
+                i = (i + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+            }
+            new_pos += seekto.write_cmd_offset;
+            printk("New position updated, %zu\n", new_pos);
 
-	    // Validate the command index and offset
-	    if (seekto.write_cmd >= AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED ||
-		seekto.write_cmd_offset >= dev->buf.entry[seekto.write_cmd].size)
-	    {
-	    	printk("seek write cmd greater than max\n");
-		retval = -EINVAL;
-		goto out_unlock;
-	    }
-
-	    // Calculate the new file position
-	    for (i = 0; i < seekto.write_cmd; i++)
-	    {
-		entry = &dev->buf.entry[index];
-		new_pos += entry->size;
-		index = (index + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
-	    }
-	    new_pos += seekto.write_cmd_offset;
-	    printk("new pos updated, %u\n",new_pos);
-	    
-	    // Update the file position
-	    filp->f_pos = new_pos;
-	 }break;
-	 default:
-	 	retval = -ENOTTY;
-	 	goto out_unlock;
+            // Update the file position
+            filp->f_pos = new_pos;
+        }
+        break;
+        default:
+            retval = -ENOTTY;
+            printk("ioctl return val=%d\n",retval);
+            goto out_unlock;
     }
-	 
 
 out_unlock:
     mutex_unlock(&dev->mutex_lock);
