@@ -169,7 +169,7 @@ void handle_client_connection(int client_fd)
     bool flag = false;
     int index = 0;
     char *bptr = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
-    int fd = open(LOG_FILE_LOC, O_RDONLY);
+    int fd = 0;
 
     if (fp == NULL)
     {
@@ -219,7 +219,8 @@ void handle_client_connection(int client_fd)
 		{
 		    syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
 		}
-		
+
+		fd = open(LOG_FILE_LOC, O_RDONLY);
 		goto read_data;
 	    }
 #endif
