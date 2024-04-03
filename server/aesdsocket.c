@@ -217,6 +217,8 @@ void handle_client_connection(int client_fd)
         struct aesd_seekto seek_tmp;
         if (sscanf(bptr, "AESDCHAR_IOCSEEKTO:%d,%d", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
         {
+        	printf("Write Command %d\r\n", seek_tmp.write_cmd);
+        	printf("Write Command Offset %d\r\n", seek_tmp.write_cmd_offset);
             // Perform ioctl operation with X and Y values
             int fd = fileno(temp_fp);
             syslog(LOG_ERR, "file desp=%d\n",fd);
