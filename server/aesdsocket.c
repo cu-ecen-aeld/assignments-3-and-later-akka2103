@@ -169,13 +169,13 @@ void handle_client_connection(int client_fd)
     bool flag = false;
     int index = 0;
     char *bptr = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
-    int fd = 0;
-
+    int fd = open(LOG_FILE_LOC, O_RDONLY);
     if (fp == NULL)
     {
         syslog(LOG_ERR, "Error opening file for writing: %m");
         free(bptr);
         close(client_fd);
+        close(fd);
         return;
     }
     
@@ -187,10 +187,9 @@ void handle_client_connection(int client_fd)
         fclose(fp);
         free(bptr);
         close(client_fd);
+        close(fd);
         return;
     }
-
-
     while (1)
     {
         ssize_t bytes_recv = recv(client_fd, bptr + index, sizeof(char) * (MAX_BUFFER_SIZE - index), 0);
@@ -203,7 +202,8 @@ void handle_client_connection(int client_fd)
 	    if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
 	    {
 		struct aesd_seekto seek_tmp;	
-		if (sscanf(bptr+19, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
+		//if (sscanf(bptr+19, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
+		if (sscanf(bptr, "AESDCHAR_IOCSEEKTO:%d,%d", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
 		{
 		    // Perform ioctl operation with X and Y values
 		    if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &seek_tmp) != 0)
@@ -219,8 +219,7 @@ void handle_client_connection(int client_fd)
 		{
 		    syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
 		}
-
-		fd = open(LOG_FILE_LOC, O_RDONLY);
+		
 		goto read_data;
 	    }
 #endif
@@ -228,7 +227,6 @@ void handle_client_connection(int client_fd)
         if (index >= MAX_BUFFER_SIZE)
         {
             char *newBptr = (char *)realloc(bptr, sizeof(char) * (index + MAX_BUFFER_SIZE));
-
             if (newBptr != NULL)
             {
                 bptr = newBptr;
@@ -240,17 +238,16 @@ void handle_client_connection(int client_fd)
                 free(bptr);
                 fclose(fp);
                 close(client_fd);
+                close(fd);
                 return;
             }
         }
-
         if (memchr(bptr, '\n', index) != NULL)
         {
             flag = true;
             break;
         }
     }
-
     if (flag)
     {
         // Lock the mutex before writing to the file
@@ -260,32 +257,32 @@ void handle_client_connection(int client_fd)
             fclose(fp);
             free(bptr);
             close(client_fd);
+            close(fd);
             return;
         }
-
         fwrite(bptr, index, 1, fp);
         fclose(fp);
         
         
-
         // Unlock the mutex after writing to the file
         if (pthread_mutex_unlock(&aesdsock_mutex) != 0)
         {
             syslog(LOG_ERR, "Error unlocking aesdsock mutex");
             free(bptr);
             close(client_fd);
+            close(fd);
             return;
         }
         
-
         read_data:
-
         // Read from aesdchar device and send data back over socket
         if (fd != -1)
         {
             char buffer[CHUNK_SIZE];
-            ssize_t bytes_read;
+            //memset
+            memset(buffer, 0, MAX_BUFFER_SIZE);
 
+            ssize_t bytes_read;
             while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
             {
                 // Send the chunk of data to the client
@@ -294,14 +291,14 @@ void handle_client_connection(int client_fd)
                     syslog(LOG_ERR, "Error sending data to client: %m");
                     break; // Exit loop on send error
                 }
+                //memset
+                memset(buffer, 0, MAX_BUFFER_SIZE);
             }
-
             if (bytes_read == -1)
             {
                 // Handle read error
                 syslog(LOG_ERR, "Error reading file: %m");
             }
-
             // Close the file descriptor
             close(fd);
         }
@@ -311,7 +308,6 @@ void handle_client_connection(int client_fd)
             syslog(LOG_ERR, "Error opening file: %m");
         }
     }
-
     free(bptr); // Free the memory allocated for bptr
     close(client_fd);
 }
