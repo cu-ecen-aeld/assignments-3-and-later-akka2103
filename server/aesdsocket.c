@@ -197,6 +197,31 @@ void handle_client_connection(int client_fd)
         {
             break;
         }
+#if (USE_AESD_CHAR_DEVICE == 1)
+         // Check if the received command is AESDCHAR_IOCSEEKTO:X,Y
+	    if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
+	    {
+		struct aesd_seekto seek_tmp;	
+		if (sscanf(bptr, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
+		{
+		    // Perform ioctl operation with X and Y values
+		    if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &seek_tmp) != 0)
+		    {
+		        syslog(LOG_ERR, "Error performing ioctl operation: %m");
+		        //free(bptr);
+		        //fclose(fp);
+		        //close(client_fd);
+		        //return;
+		    }
+		}
+		else
+		{
+		    syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
+		}
+		
+		goto file_read;
+	    }
+#endif
         index += bytes_recv;
         if (index >= MAX_BUFFER_SIZE)
         {
@@ -226,29 +251,6 @@ void handle_client_connection(int client_fd)
 
     if (flag)
     {
-    #if (USE_AESD_CHAR_DEVICE == 1)
-         // Check if the received command is AESDCHAR_IOCSEEKTO:X,Y
-    if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
-    {
-        struct aesd_seekto seek_tmp;
-        if (sscanf(bptr + 19, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
-        {
-            // Perform ioctl operation with X and Y values
-            if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &seek_tmp) == 0)
-            {
-                syslog(LOG_ERR, "Error performing ioctl operation: %m");
-                free(bptr);
-                fclose(fp);
-                close(client_fd);
-                return;
-            }
-        }
-        else
-        {
-            syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
-        }
-    }
-#endif
         // Lock the mutex before writing to the file
         if (pthread_mutex_lock(&aesdsock_mutex) != 0)
         {
@@ -261,6 +263,8 @@ void handle_client_connection(int client_fd)
 
         fwrite(bptr, index, 1, fp);
         fclose(fp);
+        
+        
 
         // Unlock the mutex after writing to the file
         if (pthread_mutex_unlock(&aesdsock_mutex) != 0)
@@ -270,9 +274,11 @@ void handle_client_connection(int client_fd)
             close(client_fd);
             return;
         }
+        
 
         // Read from aesdchar device and send data back over socket
         int fd = open(LOG_FILE_LOC, O_RDONLY);
+        file_read:
         if (fd != -1)
         {
             char buffer[CHUNK_SIZE];
