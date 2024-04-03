@@ -230,11 +230,11 @@ void handle_client_connection(int client_fd)
          // Check if the received command is AESDCHAR_IOCSEEKTO:X,Y
     if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
     {
-        unsigned int x, y;
-        if (sscanf(bptr + 19, "%u,%u", &x, &y) == 2)
+        struct aesd_seekto seek_tmp;
+        if (sscanf(bptr + 19, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
         {
             // Perform ioctl operation with X and Y values
-            if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, (unsigned long)((uint64_t)x << 32 | y)) == -1)
+            if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &seek_tmp) == 0)
             {
                 syslog(LOG_ERR, "Error performing ioctl operation: %m");
                 free(bptr);
@@ -307,6 +307,7 @@ void handle_client_connection(int client_fd)
     free(bptr); // Free the memory allocated for bptr
     close(client_fd);
 }
+
 
 void daemonize()
 {
