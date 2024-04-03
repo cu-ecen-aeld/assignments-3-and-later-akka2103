@@ -205,7 +205,7 @@ void handle_client_connection(int client_fd)
 	    if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
 	    {
 		struct aesd_seekto seek_tmp;	
-		if (sscanf(bptr+19, "%u,%u", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
+		if (sscanf(bptr, "AESDCHAR_IOCSEEKTO:%d,%d", &seek_tmp.write_cmd, &seek_tmp.write_cmd_offset) == 2)
 		{
 		    // Perform ioctl operation with X and Y values
 		    if (ioctl(device_fd, AESDCHAR_IOCSEEKTO, &seek_tmp) != 0)
