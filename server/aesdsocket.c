@@ -225,6 +225,7 @@ void handle_client_connection(int client_fd)
 
     if (flag)
     {
+	    #if (USE_AESD_CHAR_DEVICE == 1)
          // Check if the received command is AESDCHAR_IOCSEEKTO:X,Y
     if (strncmp(bptr, "AESDCHAR_IOCSEEKTO:", 19) == 0)
     {
@@ -246,6 +247,7 @@ void handle_client_connection(int client_fd)
             syslog(LOG_ERR, "Invalid command format for AESDCHAR_IOCSEEKTO");
         }
     }
+	    #endif
 
         // Lock the mutex before writing to the file
         if (pthread_mutex_lock(&aesdsock_mutex) != 0)
